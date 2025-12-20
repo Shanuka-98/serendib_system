@@ -1,0 +1,482 @@
+"""
+Booking Management Routes
+Booking CRUD operations, check-in, check-out
+"""
+
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from datetime import datetime
+from app import db
+from app.models.booking import Booking
+from app.models.room import Room
+from app.models.user import User
+from app.models.payment import Payment
+from app.models.notification import Notification
+from app.models.audit_log import AuditLog
+from app.middleware.auth import staff_or_admin_required, get_current_user
+from app.utils.helpers import (
+    success_response, error_response, validate_required_fields,
+    validate_date_range, calculate_booking_amount, get_ip_address
+)
+
+bookings_bp = Blueprint('bookings', __name__)
+
+
+@bookings_bp.route('/', methods=['GET'])
+@jwt_required()
+def get_bookings():
+    """
+    Get bookings (filtered by user role)
+    
+    Query Parameters:
+        status: Filter by status (optional)
+        branch_id: Filter by branch (staff/admin only)
+        date_from: Filter bookings from this date
+        date_to: Filter bookings until this date
+    """
+    current_user = get_current_user()
+    status = request.args.get('status')
+    branch_id = request.args.get('branch_id', type=int)
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+    
+    
+    # Start with empty date filters so they only apply when the user provides them
+    date_from_obj = None
+    date_to_obj = None
+    if date_from:
+        try:
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+        except ValueError:
+            return error_response('Invalid date_from format. Use YYYY-MM-DD', status_code=400)
+    if date_to:
+        try:
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+        except ValueError:
+            return error_response('Invalid date_to format. Use YYYY-MM-DD', status_code=400)
+    
+    # Get bookings based on role
+    if current_user.role == 'guest':
+        # Guests see only their bookings
+        bookings = Booking.get_user_bookings(current_user.user_id, status)
+    elif current_user.role == 'staff':
+        # Staff see bookings for their branch
+        if not current_user.branch_id:
+            return error_response('Staff member not assigned to a branch', status_code=400)
+        bookings = Booking.get_branch_bookings(current_user.branch_id, status, date_from_obj, date_to_obj)
+    else:  # admin
+        # Admins see all bookings or filtered by branch
+        if branch_id:
+            bookings = Booking.get_branch_bookings(branch_id, status, date_from_obj, date_to_obj)
+        else:
+            query = Booking.query
+            if status:
+                query = query.filter_by(status=status)
+            if date_from_obj:
+                query = query.filter(Booking.check_in_date >= date_from_obj)
+            if date_to_obj:
+                query = query.filter(Booking.check_out_date <= date_to_obj)
+            bookings = query.order_by(Booking.booking_date.desc()).all()
+    
+    return success_response(data={
+        'bookings': [booking.to_dict(include_relations=True) for booking in bookings],
+        'count': len(bookings)
+    })
+
+
+@bookings_bp.route('/<int:booking_id>', methods=['GET'])
+@jwt_required()
+def get_booking(booking_id):
+    """
+    Get booking details by ID
+    """
+    current_user = get_current_user()
+    booking = Booking.query.get(booking_id)
+    
+    if not booking:
+        return error_response('Booking not found', status_code=404)
+    
+    # Check permission
+    if not current_user.can_manage_booking(booking):
+        return error_response('You do not have permission to view this booking', status_code=403)
+    
+    return success_response(data={'booking': booking.to_dict(include_relations=True)})
+
+
+@bookings_bp.route('/', methods=['POST'])
+@jwt_required()
+def create_booking():
+    """
+    Create a new booking
+    
+    Request Body:
+        room_id: Room ID
+        check_in_date: Check-in date (YYYY-MM-DD)
+        check_out_date: Check-out date (YYYY-MM-DD)
+        number_of_guests: Number of guests
+        special_requests: Special requests (optional)
+    """
+    current_user = get_current_user()
+    data = request.get_json()
+    
+    # Validate required fields
+    required_fields = ['room_id', 'check_in_date', 'check_out_date', 'number_of_guests']
+    is_valid, error_msg = validate_required_fields(data, required_fields)
+    
+    if not is_valid:
+        return error_response(error_msg, status_code=400)
+    
+    # Validate room exists
+    room = Room.query.get(data['room_id'])
+    if not room:
+        return error_response('Room not found', status_code=404)
+    
+    # Validate dates
+    check_in = data['check_in_date']
+    check_out = data['check_out_date']
+    
+    is_valid, errors = validate_date_range(check_in, check_out)
+    if not is_valid:
+        return error_response('Invalid date range', errors=errors, status_code=400)
+    
+    try:
+        check_in_date = datetime.strptime(check_in, '%Y-%m-%d').date()
+        check_out_date = datetime.strptime(check_out, '%Y-%m-%d').date()
+    except ValueError:
+        return error_response('Invalid date format. Use YYYY-MM-DD', status_code=400)
+    
+    # Check room availability
+    if not room.check_availability(check_in_date, check_out_date):
+        return error_response('Room is not available for the selected dates', status_code=409)
+    
+    # Validate capacity
+    if data['number_of_guests'] > room.capacity:
+        return error_response(f'Number of guests exceeds room capacity ({room.capacity})', status_code=400)
+    
+    try:
+        # Calculate total amount
+        amount_details = calculate_booking_amount(
+            room.price_per_night,
+            check_in_date,
+            check_out_date,
+            room.branch.tax_rate
+        )
+        
+        # Create booking
+        booking = Booking(
+            user_id=current_user.user_id,
+            room_id=data['room_id'],
+            branch_id=room.branch_id,
+            check_in_date=check_in_date,
+            check_out_date=check_out_date,
+            total_amount=amount_details['total'],
+            status='pending',
+            number_of_guests=data['number_of_guests'],
+            special_requests=data.get('special_requests')
+        )
+        
+        db.session.add(booking)
+        db.session.flush()
+        
+        # Create notification
+        Notification.create_notification(
+            user_id=current_user.user_id,
+            message=f'Your booking for {room.room_number} at {room.branch.name} has been created. Please complete payment to confirm.',
+            notification_type='booking',
+            related_id=booking.booking_id,
+            action_url=f'/bookings/{booking.booking_id}'
+        )
+        
+        # Log action
+        AuditLog.log_action(
+            user_id=current_user.user_id,
+            action='CREATE',
+            table_name='Booking',
+            record_id=booking.booking_id,
+            new_values=booking.to_dict(),
+            ip_address=get_ip_address(),
+            user_agent=request.headers.get('User-Agent')
+        )
+        
+        db.session.commit()
+        
+        return success_response(
+            data={
+                'booking': booking.to_dict(include_relations=True),
+                'amount_details': amount_details
+            },
+            message='Booking created successfully. Please proceed with payment.',
+            status_code=201
+        )
+        
+    except Exception as e:
+        db.session.rollback()
+        return error_response(f'Failed to create booking: {str(e)}', status_code=500)
+
+
+@bookings_bp.route('/<int:booking_id>', methods=['PUT'])
+@jwt_required()
+def update_booking(booking_id):
+    """
+    Update booking details
+    """
+    current_user = get_current_user()
+    booking = Booking.query.get(booking_id)
+    
+    if not booking:
+        return error_response('Booking not found', status_code=404)
+    
+    # Check permission
+    if not current_user.can_manage_booking(booking):
+        return error_response('You do not have permission to modify this booking', status_code=403)
+    
+    # Only pending or confirmed bookings can be modified
+    if booking.status not in ['pending', 'confirmed']:
+        return error_response(f'Cannot modify booking with status: {booking.status}', status_code=400)
+    
+    data = request.get_json()
+    old_values = booking.to_dict()
+    
+    try:
+        # Update allowed fields
+        if 'check_in_date' in data or 'check_out_date' in data:
+            new_check_in = datetime.strptime(data.get('check_in_date', booking.check_in_date.isoformat()), '%Y-%m-%d').date()
+            new_check_out = datetime.strptime(data.get('check_out_date', booking.check_out_date.isoformat()), '%Y-%m-%d').date()
+            
+            # Validate new dates
+            is_valid, errors = validate_date_range(new_check_in.isoformat(), new_check_out.isoformat())
+            if not is_valid:
+                return error_response('Invalid date range', errors=errors, status_code=400)
+            
+            # Check availability for new dates
+            if not booking.room.check_availability(new_check_in, new_check_out):
+                return error_response('Room is not available for the new dates', status_code=409)
+            
+            booking.check_in_date = new_check_in
+            booking.check_out_date = new_check_out
+            
+            # Recalculate amount
+            amount_details = calculate_booking_amount(
+                booking.room.price_per_night,
+                new_check_in,
+                new_check_out,
+                booking.branch.tax_rate
+            )
+            booking.total_amount = amount_details['total']
+        
+        if 'number_of_guests' in data:
+            if data['number_of_guests'] > booking.room.capacity:
+                return error_response(f'Number of guests exceeds room capacity', status_code=400)
+            booking.number_of_guests = data['number_of_guests']
+        
+        if 'special_requests' in data:
+            booking.special_requests = data['special_requests']
+        
+        # Log action
+        AuditLog.log_action(
+            user_id=current_user.user_id,
+            action='UPDATE',
+            table_name='Booking',
+            record_id=booking.booking_id,
+            old_values=old_values,
+            new_values=booking.to_dict(),
+            ip_address=get_ip_address(),
+            user_agent=request.headers.get('User-Agent')
+        )
+        
+        db.session.commit()
+        
+        return success_response(
+            data={'booking': booking.to_dict(include_relations=True)},
+            message='Booking updated successfully'
+        )
+        
+    except Exception as e:
+        db.session.rollback()
+        return error_response(f'Failed to update booking: {str(e)}', status_code=500)
+
+
+@bookings_bp.route('/<int:booking_id>', methods=['DELETE'])
+@jwt_required()
+def cancel_booking(booking_id):
+    """
+    Cancel a booking
+    
+    Request Body:
+        cancellation_reason: Reason for cancellation (optional)
+    """
+    current_user = get_current_user()
+    booking = Booking.query.get(booking_id)
+    
+    if not booking:
+        return error_response('Booking not found', status_code=404)
+    
+    # Check permission
+    if not current_user.can_manage_booking(booking):
+        return error_response('You do not have permission to cancel this booking', status_code=403)
+    
+    data = request.get_json() or {}
+    reason = data.get('cancellation_reason', 'Cancelled by user')
+    
+    # Cancel booking
+    success, message = booking.cancel(reason)
+    
+    if not success:
+        return error_response(message, status_code=400)
+    
+    # Create notification
+    Notification.create_notification(
+        user_id=booking.user_id,
+        message=f'Your booking #{booking.booking_id} has been cancelled.',
+        notification_type='booking',
+        related_id=booking.booking_id
+    )
+    
+    # Log action
+    AuditLog.log_action(
+        user_id=current_user.user_id,
+        action='CANCEL',
+        table_name='Booking',
+        record_id=booking.booking_id,
+        old_values={'status': 'confirmed'},
+        new_values={'status': 'cancelled', 'reason': reason},
+        ip_address=get_ip_address(),
+        user_agent=request.headers.get('User-Agent')
+    )
+    
+    return success_response(message=message)
+
+
+@bookings_bp.route('/<int:booking_id>/checkin', methods=['POST'])
+@jwt_required()
+@staff_or_admin_required
+def check_in(booking_id):
+    """
+    Check in a guest (Staff/Admin only)
+    """
+    current_user = get_current_user()
+    booking = Booking.query.get(booking_id)
+    
+    if not booking:
+        return error_response('Booking not found', status_code=404)
+    
+    # Staff can only check in guests for their branch
+    if current_user.role == 'staff' and current_user.branch_id != booking.branch_id:
+        return error_response('You can only check in guests for your branch', status_code=403)
+    
+    # Perform check-in
+    success, message = booking.check_in()
+    
+    if not success:
+        return error_response(message, status_code=400)
+    
+    # Create notification
+    Notification.create_notification(
+        user_id=booking.user_id,
+        message=f'Welcome! You have been checked in to {booking.room.room_number} at {booking.branch.name}.',
+        notification_type='booking',
+        related_id=booking.booking_id
+    )
+    
+    # Log action
+    AuditLog.log_action(
+        user_id=current_user.user_id,
+        action='CHECKIN',
+        table_name='Booking',
+        record_id=booking.booking_id,
+        new_values={'status': 'checked_in'},
+        ip_address=get_ip_address(),
+        user_agent=request.headers.get('User-Agent')
+    )
+    
+    return success_response(
+        data={'booking': booking.to_dict(include_relations=True)},
+        message=message
+    )
+
+
+@bookings_bp.route('/<int:booking_id>/checkout', methods=['POST'])
+@jwt_required()
+@staff_or_admin_required
+def check_out(booking_id):
+    """
+    Check out a guest (Staff/Admin only)
+    """
+    current_user = get_current_user()
+    booking = Booking.query.get(booking_id)
+    
+    if not booking:
+        return error_response('Booking not found', status_code=404)
+    
+    # Staff can only check out guests for their branch
+    if current_user.role == 'staff' and current_user.branch_id != booking.branch_id:
+        return error_response('You can only check out guests for your branch', status_code=403)
+    
+    # Perform check-out
+    success, message = booking.check_out()
+    
+    if not success:
+        return error_response(message, status_code=400)
+    
+    # Award loyalty points if guest
+    if booking.user.role == 'guest' and booking.user.loyalty_program:
+        points_earned = booking.user.loyalty_program.add_points(float(booking.total_amount))
+        
+        # Create notification for points earned
+        Notification.create_notification(
+            user_id=booking.user_id,
+            message=f'You earned {points_earned} loyalty points from your stay! Current balance: {booking.user.loyalty_program.points} points.',
+            notification_type='loyalty',
+            related_id=booking.booking_id
+        )
+    
+    # Create check-out notification
+    Notification.create_notification(
+        user_id=booking.user_id,
+        message=f'Thank you for staying with us! Your check-out from {booking.room.room_number} is complete.',
+        notification_type='booking',
+        related_id=booking.booking_id
+    )
+    
+    # Log action
+    AuditLog.log_action(
+        user_id=current_user.user_id,
+        action='CHECKOUT',
+        table_name='Booking',
+        record_id=booking.booking_id,
+        new_values={'status': 'checked_out'},
+        ip_address=get_ip_address(),
+        user_agent=request.headers.get('User-Agent')
+    )
+    
+    return success_response(
+        data={'booking': booking.to_dict(include_relations=True)},
+        message=message
+    )
+
+
+@bookings_bp.route('/upcoming', methods=['GET'])
+@jwt_required()
+def get_upcoming_bookings():
+    """
+    Get upcoming bookings
+    
+    Query Parameters:
+        days: Number of days to look ahead (default: 7)
+    """
+    days = request.args.get('days', 7, type=int)
+    bookings = Booking.get_upcoming_bookings(days)
+    
+    current_user = get_current_user()
+    
+    # Filter by user role
+    if current_user.role == 'guest':
+        bookings = [b for b in bookings if b.user_id == current_user.user_id]
+    elif current_user.role == 'staff':
+        bookings = [b for b in bookings if b.branch_id == current_user.branch_id]
+    
+    return success_response(data={
+        'bookings': [booking.to_dict(include_relations=True) for booking in bookings],
+        'count': len(bookings)
+    })
+

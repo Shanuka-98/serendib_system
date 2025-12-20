@@ -1,0 +1,82 @@
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './context/AuthContext'
+import ProtectedRoute from './components/ProtectedRoute'
+import Layout from './components/Layout'
+
+// Public Pages
+import HomePage from './pages/Home'
+import LoginPage from './pages/auth/Login'
+import RegisterPage from './pages/auth/Register'
+import ForgotPasswordPage from './pages/auth/ForgotPassword'
+import ResetPasswordPage from './pages/auth/ResetPassword'
+
+// Guest Pages
+import RoomSearchPage from './pages/guest/RoomSearch'
+import RoomDetailsPage from './pages/guest/RoomDetails'
+import BookingPage from './pages/guest/Booking'
+import MyBookingsPage from './pages/guest/MyBookings'
+import BookingDetailsPage from './pages/guest/BookingDetails'
+import ServiceRequestsPage from './pages/guest/ServiceRequests'
+import LoyaltyPage from './pages/guest/Loyalty'
+import ProfilePage from './pages/guest/Profile'
+
+// Staff Pages
+import StaffDashboard from './pages/staff/Dashboard'
+import CheckInOutPage from './pages/staff/CheckInOut'
+import ServiceManagementPage from './pages/staff/ServiceManagement'
+import RoomStatusPage from './pages/staff/RoomStatus'
+
+// Admin Pages
+import AdminDashboard from './pages/admin/Dashboard'
+import UserManagement from './pages/admin/UserManagement'
+import RoomManagement from './pages/admin/RoomManagement'
+import BranchConfig from './pages/admin/BranchConfig'
+import AnalyticsPage from './pages/admin/Analytics'
+import AuditLogsPage from './pages/admin/AuditLogs'
+
+function App() {
+  return (
+    <AuthProvider>
+      <Layout>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          
+          {/* Guest Routes */}
+          <Route path="/rooms" element={<RoomSearchPage />} />
+          <Route path="/rooms/:id" element={<RoomDetailsPage />} />
+          <Route path="/booking" element={<ProtectedRoute><BookingPage /></ProtectedRoute>} />
+          <Route path="/my-bookings" element={<ProtectedRoute roles={['guest']}><MyBookingsPage /></ProtectedRoute>} />
+          <Route path="/bookings/:id" element={<ProtectedRoute><BookingDetailsPage /></ProtectedRoute>} />
+          <Route path="/service-requests" element={<ProtectedRoute><ServiceRequestsPage /></ProtectedRoute>} />
+          <Route path="/loyalty" element={<ProtectedRoute><LoyaltyPage /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          
+          {/* Staff Routes */}
+          <Route path="/staff" element={<ProtectedRoute roles={['staff', 'admin']}><StaffDashboard /></ProtectedRoute>} />
+          <Route path="/staff/checkin" element={<ProtectedRoute roles={['staff', 'admin']}><CheckInOutPage /></ProtectedRoute>} />
+          <Route path="/staff/services" element={<ProtectedRoute roles={['staff', 'admin']}><ServiceManagementPage /></ProtectedRoute>} />
+          <Route path="/staff/rooms" element={<ProtectedRoute roles={['staff', 'admin']}><RoomStatusPage /></ProtectedRoute>} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute roles={['admin']}><UserManagement /></ProtectedRoute>} />
+          <Route path="/admin/rooms" element={<ProtectedRoute roles={['admin']}><RoomManagement /></ProtectedRoute>} />
+          <Route path="/admin/branches" element={<ProtectedRoute roles={['admin']}><BranchConfig /></ProtectedRoute>} />
+          <Route path="/admin/analytics" element={<ProtectedRoute roles={['admin']}><AnalyticsPage /></ProtectedRoute>} />
+          <Route path="/admin/audit-logs" element={<ProtectedRoute roles={['admin']}><AuditLogsPage /></ProtectedRoute>} />
+          
+          {/* 404 */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Layout>
+    </AuthProvider>
+  )
+}
+
+export default App
+
