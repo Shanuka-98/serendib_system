@@ -130,12 +130,15 @@
 2.  **Backend:**
     ```bash
     cd serendib-backend
-    source venv/Scripts/activate  # Windows
+    python -m venv venv             # Create virtual environment
+    venv\Scripts\activate           # Activate (Windows)
+    pip install -r requirements.txt # Install dependencies
     python run.py
     ```
 3.  **Frontend:**
     ```bash
     cd serendib-frontend
+    npm install                     # Install dependencies
     npm run dev
     ```
 
@@ -177,4 +180,4 @@
 -   **State Management**: React `useState` + `useEffect` for local state; Context API for Auth.
 -   **Styling**: Tailwind CSS with custom config (`tailwind.config.js`).
 
-**Congratulations! The Serendib Smart Hotel Management System is a robust, feature-rich application ready for demonstration.**
+
