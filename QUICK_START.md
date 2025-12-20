@@ -2,7 +2,7 @@
 
 **Get the application running in 5 minutes!**
 
-> For detailed project information, features, and documentation, see `PROJECT_COMPLETE.md`
+> For detailed project information, features, and documentation, see `README.md`
 
 ---
 

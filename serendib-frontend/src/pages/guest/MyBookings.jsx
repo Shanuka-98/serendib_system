@@ -9,6 +9,8 @@ import { bookingAPI } from '../../services/api'
 import { format, parseISO, isPast, isFuture } from 'date-fns'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
+import EmptyState from '../../components/EmptyState'
+import { RotateCcw } from 'lucide-react'
 
 const MyBookingsPage = () => {
   const navigate = useNavigate()
@@ -169,33 +171,17 @@ const MyBookingsPage = () => {
 
         {/* Bookings List */}
         {filteredBookings.length === 0 ? (
-          <div className="text-center py-20">
-            <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-2xl font-display font-bold text-gray-800 mb-2">
-              No bookings found
-            </h3>
-            <p className="text-gray-600 mb-6">
-              {filter === 'all'
-                ? "You haven't made any bookings yet"
-                : `No ${filter} bookings found`}
-            </p>
-            {filter !== 'all' && (
-              <button
-                onClick={() => setFilter('all')}
-                className="btn btn-secondary"
-              >
-                View All Bookings
-              </button>
-            )}
-            {filter === 'all' && (
-              <button
-                onClick={() => navigate('/rooms')}
-                className="btn btn-primary"
-              >
-                Search Rooms
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={filter === 'all' ? 'calendar' : 'search'}
+            title={filter === 'all' ? 'No bookings yet' : `No ${filter} bookings`}
+            description={
+              filter === 'all'
+                ? "You haven't made any bookings yet. Start planning your next trip!"
+                : `We couldn't find any ${filter} bookings in your history.`
+            }
+            action={filter === 'all' ? () => navigate('/rooms') : () => setFilter('all')}
+            actionLabel={filter === 'all' ? 'Search Rooms' : 'View All Bookings'}
+          />
         ) : (
           <div className="space-y-4">
             {filteredBookings.map((booking, index) => (
@@ -307,19 +293,28 @@ const MyBookingsPage = () => {
                         <Eye className="h-4 w-4 mr-2" />
                         View Details
                       </button>
-                      {booking.status !== 'cancelled' && 
-                       booking.status !== 'completed' &&
-                       (() => {
-                         const checkInDate = booking.check_in_date || booking.check_in
-                         return checkInDate && isFuture(parseISO(checkInDate))
-                       })() && (
+                      
+                      {booking.status === 'completed' || booking.status === 'cancelled' ? (
                         <button
-                          onClick={() => handleCancelBooking(booking.booking_id)}
-                          className="btn btn-secondary w-full text-red-600 hover:bg-red-50"
+                          onClick={() => navigate(`/rooms/${booking.room?.room_id}`)}
+                          className="btn btn-secondary w-full"
                         >
-                          <X className="h-4 w-4 mr-2" />
-                          Cancel
+                          <RotateCcw className="h-4 w-4 mr-2" />
+                          Book Again
                         </button>
+                      ) : (
+                        (() => {
+                           const checkInDate = booking.check_in_date || booking.check_in
+                           return checkInDate && isFuture(parseISO(checkInDate))
+                         })() && (
+                          <button
+                            onClick={() => handleCancelBooking(booking.booking_id)}
+                            className="btn btn-secondary w-full text-red-600 hover:bg-red-50"
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Cancel
+                          </button>
+                        )
                       )}
                     </div>
                   </div>

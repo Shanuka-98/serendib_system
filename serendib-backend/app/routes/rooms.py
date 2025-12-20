@@ -11,7 +11,7 @@ from app.models.room import Room
 from app.models.branch import Branch
 from app.models.user import User
 from app.models.audit_log import AuditLog
-from app.middleware.auth import admin_required, get_current_user
+from app.middleware.auth import admin_required, staff_or_admin_required, get_current_user
 from app.utils.helpers import (
     success_response, error_response, paginate_query,
     validate_required_fields, get_ip_address, validate_date_range
@@ -260,7 +260,7 @@ def create_room():
 
 @rooms_bp.route('/<int:room_id>', methods=['PUT'])
 @jwt_required()
-@admin_required
+@staff_or_admin_required
 def update_room(room_id):
     """
     Update room details (Admin only)

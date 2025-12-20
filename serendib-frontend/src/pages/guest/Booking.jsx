@@ -192,7 +192,21 @@ const BookingPage = () => {
           Back to Search
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Step Indicator */}
+        <div className="mb-8">
+          <StepIndicator 
+            steps={['Room Selection', 'Guest Details', 'Confirmation']} 
+            currentStep={2} 
+            className="hidden md:flex"
+          />
+          <StepIndicatorCompact 
+            steps={['Selection', 'Details', 'Confirm']} 
+            currentStep={2} 
+            className="flex md:hidden justify-center"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-24 lg:pb-0">
           {/* Main Booking Form */}
           <div className="lg:col-span-2 space-y-6">
             {/* Room Summary Card */}
@@ -256,7 +270,7 @@ const BookingPage = () => {
                 </div>
 
                 {/* Price */}
-                <div className="text-right">
+                <div className="text-right hidden sm:block">
                   <p className="text-2xl font-bold text-primary-600">
                     {formatPrice(room.price_per_night)}
                   </p>
@@ -277,7 +291,7 @@ const BookingPage = () => {
               </h2>
               
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Full Name
@@ -285,7 +299,7 @@ const BookingPage = () => {
                     <input
                       type="text"
                       value={user?.full_name || ''}
-                      className="input"
+                      className="input bg-gray-50"
                       disabled
                     />
                   </div>
@@ -296,7 +310,7 @@ const BookingPage = () => {
                     <input
                       type="email"
                       value={user?.email || ''}
-                      className="input"
+                      className="input bg-gray-50"
                       disabled
                     />
                   </div>
@@ -348,7 +362,7 @@ const BookingPage = () => {
                 </div>
 
                 {formData.payment_method === 'card' && (
-                  <div className="space-y-4 p-4 bg-gray-50 rounded-xl">
+                  <div className="space-y-4 p-4 bg-gray-50 rounded-xl animate-fade-in">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Card Number
@@ -410,17 +424,6 @@ const BookingPage = () => {
                     </div>
                   </div>
                 )}
-
-                {formData.payment_method !== 'card' && (
-                  <div className="p-4 bg-primary-50 rounded-xl border border-primary-200">
-                    <div className="flex items-start">
-                      <Info className="h-5 w-5 text-primary-600 mr-2 mt-0.5" />
-                      <p className="text-sm text-primary-700">
-                        Payment will be collected upon arrival at the hotel.
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
             </motion.div>
           </div>
@@ -468,8 +471,8 @@ const BookingPage = () => {
                 </span>
               </div>
 
-              {/* Submit Button */}
-              <form onSubmit={handleSubmit}>
+              {/* Submit Button (Desktop) */}
+              <form onSubmit={handleSubmit} className="hidden lg:block">
                 <button
                   type="submit"
                   disabled={submitting || !user}
@@ -509,6 +512,25 @@ const BookingPage = () => {
               </div>
             </motion.div>
           </div>
+        </div>
+      </div>
+
+      {/* Mobile Sticky Footer */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-lg lg:hidden z-50">
+        <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
+          <div>
+            <p className="text-sm text-gray-500">Total Amount</p>
+            <p className="text-xl font-bold text-primary-600">
+              {formatPrice(bookingSummary.total)}
+            </p>
+          </div>
+          <button
+            onClick={handleSubmit}
+            disabled={submitting || !user}
+            className="btn btn-primary px-8 py-3 rounded-full shadow-lg disabled:opacity-50"
+          >
+            {submitting ? 'Processing...' : 'Book Now'}
+          </button>
         </div>
       </div>
     </div>

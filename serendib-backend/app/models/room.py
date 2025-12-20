@@ -18,7 +18,7 @@ class Room(db.Model):
     capacity = db.Column(db.Integer, nullable=False)
     price_per_night = db.Column(db.Numeric(10, 2), nullable=False)
     status = db.Column(
-        db.Enum('available', 'occupied', 'maintenance', 'reserved', name='room_status'),
+        db.Enum('available', 'occupied', 'maintenance', 'reserved', 'cleaning', name='room_status'),
         default='available'
     )
     amenities = db.Column(db.JSON)
@@ -110,7 +110,7 @@ class Room(db.Model):
     
     def update_status(self, new_status):
         """Update room status"""
-        valid_statuses = ['available', 'occupied', 'maintenance', 'reserved']
+        valid_statuses = ['available', 'occupied', 'maintenance', 'reserved', 'cleaning']
         if new_status in valid_statuses:
             self.status = new_status
             db.session.commit()

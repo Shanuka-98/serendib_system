@@ -9,6 +9,7 @@ import {
 import { roomAPI } from '../../services/api'
 import { format } from 'date-fns'
 import { toast } from 'react-toastify'
+import { RoomCardSkeleton } from '../../components/Skeletons'
 
 const RoomSearchPage = () => {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -310,9 +311,10 @@ const RoomSearchPage = () => {
       {/* Results */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         {loading ? (
-          <div className="text-center py-20">
-            <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Searching for rooms...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <RoomCardSkeleton key={i} />
+            ))}
           </div>
         ) : rooms.length === 0 ? (
           <div className="text-center py-20">
@@ -343,7 +345,7 @@ const RoomSearchPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className="glass rounded-2xl overflow-hidden hover:shadow-xl transition-shadow cursor-pointer group"
-                onClick={() => navigate(`/rooms/${room.room_id}`)}
+                onClick={() => navigate(`/rooms/${room.room_id}?check_in=${checkIn}&check_out=${checkOut}&guests=${guests}`)}
               >
                 {/* Room Image */}
                 <div className="relative h-48 bg-gradient-to-br from-primary-200 to-lavender-200 overflow-hidden">
@@ -360,7 +362,8 @@ const RoomSearchPage = () => {
                   )}
                   <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
                     <span className="text-sm font-semibold text-primary-600">
-                      {formatPrice(room.price_per_night)}/night
+                      {formatPrice(room.price_per_night)}
+                      <span className="text-xs font-normal text-gray-500">/night</span>
                     </span>
                   </div>
                 </div>
@@ -376,28 +379,25 @@ const RoomSearchPage = () => {
                         Room {room.room_number} • Floor {room.floor}
                       </p>
                     </div>
-                    <div className="flex items-center text-yellow-500">
-                      <Star className="h-4 w-4 fill-current" />
-                      <span className="ml-1 text-sm font-medium">4.8</span>
+                    {/* Rating placeholder - would normally come from reviews */}
+                    <div className="flex items-center text-yellow-500 bg-yellow-50 px-2 py-1 rounded-lg">
+                      <Star className="h-3 w-3 fill-current" />
+                      <span className="ml-1 text-xs font-medium">4.8</span>
                     </div>
                   </div>
 
                   <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                    {room.description || 'Comfortable and well-appointed room'}
+                    {room.description || 'Experience comfort and luxury in our well-appointed rooms, designed for your relaxation.'}
                   </p>
 
                   {/* Room Details */}
-                  <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
+                  <div className="flex items-center gap-4 text-sm text-gray-600 mb-4 bg-gray-50 p-3 rounded-xl">
                     <div className="flex items-center">
-                      <Users className="h-4 w-4 mr-1" />
-                      {room.capacity}
+                      <Users className="h-4 w-4 mr-1 text-primary-500" />
+                      {room.capacity} Guests
                     </div>
                     <div className="flex items-center">
-                      <Bed className="h-4 w-4 mr-1" />
-                      {room.capacity} Bed{room.capacity > 1 ? 's' : ''}
-                    </div>
-                    <div className="flex items-center">
-                      <Square className="h-4 w-4 mr-1" />
+                      <Square className="h-4 w-4 mr-1 text-primary-500" />
                       {room.floor} Floor
                     </div>
                   </div>
@@ -410,15 +410,15 @@ const RoomSearchPage = () => {
                         return (
                           <span
                             key={idx}
-                            className="inline-flex items-center px-2 py-1 bg-gray-100 rounded-lg text-xs text-gray-700"
+                            className="inline-flex items-center px-2 py-1 bg-white border border-gray-100 rounded-lg text-xs text-gray-600"
                           >
-                            <Icon className="h-3 w-3 mr-1" />
+                            <Icon className="h-3 w-3 mr-1 text-primary-500" />
                             {amenity}
                           </span>
                         )
                       })}
                       {room.amenities.length > 3 && (
-                        <span className="text-xs text-gray-500 self-center">
+                        <span className="text-xs text-primary-600 font-medium self-center bg-primary-50 px-2 py-1 rounded-lg">
                           +{room.amenities.length - 3} more
                         </span>
                       )}
@@ -431,10 +431,10 @@ const RoomSearchPage = () => {
                       e.stopPropagation()
                       handleBookNow(room)
                     }}
-                    className="btn btn-primary w-full group-hover:bg-primary-600"
+                    className="btn btn-primary w-full group-hover:bg-primary-600 shadow-md group-hover:shadow-lg"
                   >
-                    Book Now
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    View Details
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </button>
                 </div>
               </motion.div>

@@ -30,9 +30,10 @@ import RoomStatusPage from './pages/staff/RoomStatus'
 import AdminDashboard from './pages/admin/Dashboard'
 import UserManagement from './pages/admin/UserManagement'
 import RoomManagement from './pages/admin/RoomManagement'
-import BranchConfig from './pages/admin/BranchConfig'
+import BranchManagement from './pages/admin/BranchManagement'
 import AnalyticsPage from './pages/admin/Analytics'
 import AuditLogsPage from './pages/admin/AuditLogs'
+import AdminProfile from './pages/admin/Profile'
 
 function App() {
   return (
@@ -58,17 +59,18 @@ function App() {
           
           {/* Staff Routes */}
           <Route path="/staff" element={<ProtectedRoute roles={['staff', 'admin']}><StaffDashboard /></ProtectedRoute>} />
-          <Route path="/staff/checkin" element={<ProtectedRoute roles={['staff', 'admin']}><CheckInOutPage /></ProtectedRoute>} />
+          <Route path="/staff/check-in-out" element={<ProtectedRoute roles={['staff', 'admin']}><CheckInOutPage /></ProtectedRoute>} />
           <Route path="/staff/services" element={<ProtectedRoute roles={['staff', 'admin']}><ServiceManagementPage /></ProtectedRoute>} />
-          <Route path="/staff/rooms" element={<ProtectedRoute roles={['staff', 'admin']}><RoomStatusPage /></ProtectedRoute>} />
+          <Route path="/staff/room-status" element={<ProtectedRoute roles={['staff', 'admin']}><RoomStatusPage /></ProtectedRoute>} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute roles={['admin']}><UserManagement /></ProtectedRoute>} />
           <Route path="/admin/rooms" element={<ProtectedRoute roles={['admin']}><RoomManagement /></ProtectedRoute>} />
-          <Route path="/admin/branches" element={<ProtectedRoute roles={['admin']}><BranchConfig /></ProtectedRoute>} />
+          <Route path="/admin/branches" element={<ProtectedRoute roles={['admin']}><BranchManagement /></ProtectedRoute>} />
           <Route path="/admin/analytics" element={<ProtectedRoute roles={['admin']}><AnalyticsPage /></ProtectedRoute>} />
           <Route path="/admin/audit-logs" element={<ProtectedRoute roles={['admin']}><AuditLogsPage /></ProtectedRoute>} />
+          <Route path="/admin/profile" element={<ProtectedRoute roles={['admin']}><AdminProfile /></ProtectedRoute>} />
           
           {/* 404 */}
           <Route path="*" element={<Navigate to="/" replace />} />

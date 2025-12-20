@@ -185,7 +185,7 @@ const RoomManagement = () => {
               setEditingRoom(null)
               setShowModal(true)
             }}
-            className="btn btn-primary"
+            className="btn btn-primary flex items-center"
           >
             <Plus className="h-5 w-5 mr-2" />
             Add Room

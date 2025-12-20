@@ -109,7 +109,7 @@ export const bookingAPI = {
   createBooking: (data) => api.post('/bookings', data),
   updateBooking: (id, data) => api.put(`/bookings/${id}`, data),
   cancelBooking: (id, reason) => api.delete(`/bookings/${id}`, { data: { cancellation_reason: reason } }),
-  checkIn: (id) => api.post(`/bookings/${id}/checkin`),
+  checkIn: (id, data) => api.post(`/bookings/${id}/checkin`, data),
   checkOut: (id) => api.post(`/bookings/${id}/checkout`),
   getUpcoming: (days) => api.get('/bookings/upcoming', { params: { days } }),
 }
@@ -154,8 +154,11 @@ export const loyaltyAPI = {
 export const adminAPI = {
   getDashboard: () => api.get('/admin/dashboard'),
   getUsers: (params) => api.get('/admin/users', { params }),
+  createUser: (data) => api.post('/admin/users', data),
   updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
   getBranches: () => api.get('/admin/branches'),
+  getBranchConfig: (id) => api.get(`/admin/branches/${id}/config`),
+  updateBranch: (id, data) => api.put(`/admin/branches/${id}`, data),
   updateBranchConfig: (id, data) => api.put(`/admin/branches/${id}/config`, data),
   getAuditLogs: (params) => api.get('/admin/audit-logs', { params }),
   generateReports: (params) => api.get('/admin/reports', { params }),
@@ -168,5 +171,13 @@ export const analyticsAPI = {
   getOccupancy: (params) => api.get('/analytics/occupancy', { params }),
   getBookingTrends: (params) => api.get('/analytics/booking-trends', { params }),
   getCustomerInsights: (params) => api.get('/analytics/customer-insights', { params }),
+}
+
+// Stripe API - payment processing with Stripe
+export const stripeAPI = {
+  /** Create a Stripe payment intent for a booking */
+  createPaymentIntent: (data) => api.post('/stripe/create-intent', data),
+  /** Confirm payment after successful Stripe charge */
+  confirmPayment: (data) => api.post('/stripe/confirm', data),
 }
 

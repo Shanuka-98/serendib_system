@@ -1,122 +1,97 @@
-# Serendib Hotels Database Setup
+# Serendib Hotels - Database
 
-## Database Schema Overview
+MySQL database schema for the Serendib Smart Hotel Management System.
 
-This database supports a multi-branch hotel management system with three branches:
-- **Colombo** (City Business Hotel)
-- **Mirissa** (Beach Resort)
-- **Kandy** (Hill Country Retreat)
+**Last Updated:** December 2024
 
 ## Quick Setup
 
-### 1. Create Database
+### Using XAMPP (Recommended)
+1. Start XAMPP MySQL
+2. Open phpMyAdmin: http://localhost/phpmyadmin
+3. Create database: `serendib_hotels`
+4. Import: `schema.sql`
 
+### Using Command Line
 ```bash
 mysql -u root -p < schema.sql
 ```
 
-### 2. Verify Installation
-
+### Fix Passwords (Required!)
+After importing, run password fix:
 ```bash
-mysql -u root -p serendib_hotels
-```
-
-Then run:
-```sql
-SHOW TABLES;
-SELECT * FROM Branch;
+cd ../serendib-backend
+source venv/Scripts/activate
+python fix_passwords.py
 ```
 
 ## Database Tables
 
 | Table | Description |
 |-------|-------------|
-| **Branch** | Hotel branch locations and configurations |
-| **User** | All system users (guests, staff, admins) |
-| **Room** | Room inventory across all branches |
-| **Booking** | Guest reservations and bookings |
-| **Payment** | Payment transactions and refunds |
-| **ServiceRequest** | Guest service requests (room service, housekeeping, etc.) |
-| **Notification** | System notifications for users |
-| **Staff** | Staff member details and schedules |
-| **LoyaltyProgram** | Guest loyalty points and tiers |
-| **AuditLog** | System audit trail |
-| **PropertyConfig** | Branch-specific configurations |
-| **Promotion** | Promotional campaigns and discount codes |
+| **Branch** | Hotel locations (Colombo, Mirissa, Kandy) |
+| **User** | All users (guests, staff, admins) |
+| **Room** | Room inventory |
+| **Booking** | Reservations |
+| **Payment** | Transactions |
+| **ServiceRequest** | Guest requests |
+| **Notification** | System alerts |
+| **Staff** | Staff details |
+| **LoyaltyProgram** | Points & tiers |
+| **AuditLog** | Audit trail |
+| **PropertyConfig** | Branch configs |
+| **Promotion** | Discount codes |
 
-## Sample Credentials
+## Test Credentials
 
-### Admin Users
-- **Email**: `admin@serendibhotels.lk`  
-  **Password**: `admin123`  
-  **Role**: System Administrator
+After running `fix_passwords.py`:
 
-- **Email**: `manager.colombo@serendibhotels.lk`  
-  **Password**: `admin123`  
-  **Role**: Branch Manager (Colombo)
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@serendibhotels.lk` | `admin123` |
+| Staff | `staff1.colombo@serendibhotels.lk` | `staff123` |
+| Guest | `john.doe@example.com` | `guest123` |
 
-### Staff Users
-- **Email**: `staff1.colombo@serendibhotels.lk`  
-  **Password**: `staff123`  
-  **Role**: Front Desk Manager
+## Sample Data
 
-### Guest Users
-- **Email**: `john.doe@example.com`  
-  **Password**: `guest123`  
-  **Role**: Guest
+- **3 Branches** - Colombo, Mirissa, Kandy
+- **12 Users** - Admins, Staff, Guests
+- **16 Rooms** - Various types
+- **5 Bookings** - Sample reservations
+- **4 Promotions** - Active discounts
 
-## Key Features
+## Database Features
 
 ### Views
-- `vw_room_availability` - Real-time room availability by branch
-- `vw_revenue_summary` - Monthly revenue analytics
-- `vw_booking_dashboard` - Booking status overview
+- `vw_room_availability` - Real-time availability
+- `vw_revenue_summary` - Revenue analytics
+- `vw_booking_dashboard` - Booking overview
 
 ### Stored Procedures
-- `sp_check_room_availability()` - Check available rooms for date range
-- `sp_calculate_loyalty_points()` - Auto-calculate and update loyalty points
+- `sp_check_room_availability()` - Check dates
+- `sp_calculate_loyalty_points()` - Update points
 
 ### Triggers
-- Auto-create loyalty program on user registration
-- Update room status on booking confirmation
-- Audit logging for all booking changes
+- Auto-create loyalty on registration
+- Update room status on booking
+- Audit logging
 
-## Database Statistics
+## Backup
 
-After setup, you should have:
-- **3 Branches** (Colombo, Mirissa, Kandy)
-- **12 Users** (1 admin, 3 branch managers, 4 staff, 4 guests)
-- **16 Rooms** across all branches
-- **5 Sample Bookings**
-- **5 Payments**
-- **5 Service Requests**
-- **4 Active Promotions**
-
-## Indexes
-
-Optimized indexes for:
-- User authentication (email, role)
-- Room availability queries (branch, status, type)
-- Booking date range searches
-- Payment transaction lookups
-- Notification filtering
-
-## Backup & Restore
-
-### Backup
 ```bash
-mysqldump -u root -p serendib_hotels > backup_$(date +%Y%m%d).sql
-```
+# Backup
+mysqldump -u root -p serendib_hotels > backup.sql
 
-### Restore
-```bash
-mysql -u root -p serendib_hotels < backup_20241115.sql
+# Restore
+mysql -u root -p serendib_hotels < backup.sql
 ```
 
 ## Notes
 
-- All passwords are hashed using bcrypt
-- JWT tokens will be managed by the Flask backend
-- Tax rates vary by branch (Colombo: 15%, Mirissa: 12%, Kandy: 13%)
-- Loyalty tiers: Bronze (0-999), Silver (1000-2999), Gold (3000-4999), Platinum (5000+)
+- Passwords: bcrypt hashed
+- Tax rates: Colombo 15%, Mirissa 12%, Kandy 13%
+- Loyalty: Bronze, Silver, Gold, Platinum
 
+## License
+
+© 2024 Serendib Hotels

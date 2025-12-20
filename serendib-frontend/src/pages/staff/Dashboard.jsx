@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Calendar, Users, Clock, AlertCircle, CheckCircle, TrendingUp } from 'lucide-react'
+import { Calendar, Users, Clock, AlertCircle, CheckCircle, TrendingUp, Bed, RefreshCw } from 'lucide-react'
 import { bookingAPI, serviceRequestAPI } from '../../services/api'
 import { format } from 'date-fns'
 
@@ -24,7 +25,7 @@ const StaffDashboard = () => {
       setLoading(true)
       // Fetch today's bookings
       const bookingsResponse = await bookingAPI.getUpcoming(1)
-      const bookings = bookingsResponse.data.data || []
+      const bookings = bookingsResponse.data.data?.bookings || []
       
       // Filter today's check-ins and check-outs
       const today = format(new Date(), 'yyyy-MM-dd')
@@ -85,11 +86,22 @@ const StaffDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-peach-50 py-8">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="mb-8">
-          <h1 className="text-4xl font-display font-bold text-gray-800 mb-2">
-            Staff Dashboard
-          </h1>
-          <p className="text-gray-600">Welcome back! Here's what's happening today.</p>
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-display font-bold text-gray-800 mb-2">
+              Staff Dashboard
+            </h1>
+            <p className="text-gray-600">Welcome back! Here's what's happening today.</p>
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            title="Refresh Data"
+            onClick={fetchDashboardData}
+            className="btn btn-white flex items-center justify-center p-2 shadow-sm"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </motion.button>
         </div>
 
         {/* Stats Grid */}
@@ -113,6 +125,56 @@ const StaffDashboard = () => {
             )
           })}
         </div>
+
+        {/* Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-8"
+        >
+          <h2 className="text-xl font-display font-bold text-gray-800 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Link
+            to="/staff/check-in-out"
+            className="bg-white p-6 rounded-2xl shadow-soft hover:shadow-lg transition-all group"
+          >
+            <div className="flex items-center gap-4 mb-3">
+              <div className="p-3 bg-primary-100 rounded-xl group-hover:scale-110 transition-transform">
+                <CheckCircle className="h-6 w-6 text-primary-600" />
+              </div>
+              <h3 className="font-semibold text-gray-800">Check-In / Out</h3>
+            </div>
+            <p className="text-sm text-gray-600">Process guest arrivals and departures</p>
+          </Link>
+
+          <Link
+            to="/staff/room-status"
+            className="bg-white p-6 rounded-2xl shadow-soft hover:shadow-lg transition-all group"
+          >
+            <div className="flex items-center gap-4 mb-3">
+              <div className="p-3 bg-mint-100 rounded-xl group-hover:scale-110 transition-transform">
+                <Bed className="h-6 w-6 text-mint-600" />
+              </div>
+              <h3 className="font-semibold text-gray-800">Room Status</h3>
+            </div>
+            <p className="text-sm text-gray-600">Update room availability and status</p>
+          </Link>
+
+          <Link
+            to="/staff/services"
+            className="bg-white p-6 rounded-2xl shadow-soft hover:shadow-lg transition-all group"
+          >
+            <div className="flex items-center gap-4 mb-3">
+              <div className="p-3 bg-lavender-100 rounded-xl group-hover:scale-110 transition-transform">
+                <AlertCircle className="h-6 w-6 text-lavender-600" />
+              </div>
+              <h3 className="font-semibold text-gray-800">Service Requests</h3>
+            </div>
+            <p className="text-sm text-gray-600">Manage guest requests and tasks</p>
+          </Link>
+          </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Today's Bookings */}

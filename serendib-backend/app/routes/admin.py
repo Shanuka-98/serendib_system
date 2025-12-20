@@ -168,6 +168,55 @@ def get_users():
     return success_response(data=result)
 
 
+@admin_bp.route('/users', methods=['POST'])
+@jwt_required()
+@admin_required
+def create_user():
+    """
+    Create a new user (Admin only)
+    
+    Request Body:
+        email: User email (required)
+        password: User password (required)
+        full_name: User full name (required)
+        role: User role (guest, staff, admin)
+        branch_id: Branch ID (optional)
+        phone: Phone number (optional)
+    """
+    data = request.get_json()
+    
+    required_fields = ['email', 'password', 'full_name']
+    for field in required_fields:
+        if not data.get(field):
+            return error_response(f'{field} is required', status_code=400)
+    
+    # Check if email already exists
+    if User.query.filter_by(email=data['email']).first():
+        return error_response('Email already registered', status_code=400)
+    
+    try:
+        user = User(
+            email=data['email'],
+            full_name=data['full_name'],
+            role=data.get('role', 'guest'),
+            branch_id=data.get('branch_id'),
+            phone=data.get('phone'),
+            is_active=data.get('is_active', True)
+        )
+        user.set_password(data['password'])
+        
+        db.session.add(user)
+        db.session.commit()
+        
+        return success_response(
+            message='User created successfully',
+            data={'user': user.to_dict()},
+            status_code=201
+        )
+    except Exception as e:
+        db.session.rollback()
+        return error_response(f'Failed to create user: {str(e)}', status_code=500)
+
 @admin_bp.route('/users/<int:user_id>', methods=['PUT'])
 @jwt_required()
 @admin_required
@@ -256,6 +305,43 @@ def get_branches():
     
     return success_response(data={'branches': branch_data, 'count': len(branch_data)})
 
+
+@admin_bp.route('/branches/<int:branch_id>', methods=['PUT'])
+@jwt_required()
+@admin_required
+def update_branch(branch_id):
+    """
+    Update branch details
+    """
+    branch = Branch.query.get(branch_id)
+    if not branch:
+        return error_response('Branch not found', status_code=404)
+    
+    data = request.get_json()
+    
+    try:
+        if 'name' in data:
+            branch.name = data['name']
+        if 'location' in data:
+            branch.location = data['location']
+        if 'city' in data:
+            branch.city = data['city']
+        if 'address' in data:
+            branch.address = data['address']
+        if 'tax_rate' in data:
+            branch.tax_rate = float(data['tax_rate'])
+        if 'contact_info' in data:
+            branch.contact_info = data['contact_info']
+        
+        db.session.commit()
+        
+        return success_response(
+            message='Branch updated successfully',
+            data={'branch': branch.to_dict()}
+        )
+    except Exception as e:
+        db.session.rollback()
+        return error_response(f'Failed to update branch: {str(e)}', status_code=500)
 
 @admin_bp.route('/branches/<int:branch_id>/config', methods=['GET', 'PUT'])
 @jwt_required()

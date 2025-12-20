@@ -7,6 +7,7 @@ import {
 import { adminAPI } from '../../services/api'
 import { format } from 'date-fns'
 import { toast } from 'react-toastify'
+import { ResponsiveTable } from '../../components/ResponsiveTable'
 
 const UserManagement = () => {
   const [users, setUsers] = useState([])
@@ -71,15 +72,20 @@ const UserManagement = () => {
     setShowModal(true)
   }
 
-  const handleSave = async (userData) => {
+  const handleSave = async (userData, isCreate) => {
     try {
-      await adminAPI.updateUser(editingUser.user_id, userData)
-      toast.success('User updated successfully')
+      if (isCreate) {
+        await adminAPI.createUser(userData)
+        toast.success('User created successfully')
+      } else {
+        await adminAPI.updateUser(editingUser.user_id, userData)
+        toast.success('User updated successfully')
+      }
       setShowModal(false)
       setEditingUser(null)
       fetchUsers()
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update user')
+      toast.error(error.response?.data?.message || 'Failed to save user')
     }
   }
 
@@ -120,7 +126,7 @@ const UserManagement = () => {
               setEditingUser(null)
               setShowModal(true)
             }}
-            className="btn btn-primary"
+            className="btn btn-primary flex items-center"
           >
             <Plus className="h-5 w-5 mr-2" />
             Add User
@@ -177,7 +183,7 @@ const UserManagement = () => {
             <div className="flex items-end">
               <button
                 onClick={() => setFilters({ role: '', branch_id: '', is_active: '', search: '' })}
-                className="btn btn-secondary w-full"
+                className="btn btn-secondary flex items-center w-full"
               >
                 <Filter className="h-4 w-4 mr-2" />
                 Clear
@@ -201,131 +207,98 @@ const UserManagement = () => {
             <p className="text-gray-600">Try adjusting your filters</p>
           </div>
         ) : (
-          <>
-            <div className="glass rounded-2xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase">User</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase">Role</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase">Branch</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase">Joined</th>
-                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {users.map((user, index) => (
-                      <motion.tr
-                        key={user.user_id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.02 }}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-lavender-400 rounded-full flex items-center justify-center">
-                              <User className="h-5 w-5 text-white" />
-                            </div>
-                            <div>
-                              <p className="font-semibold text-gray-800">{user.full_name}</p>
-                              <p className="text-sm text-gray-500">{user.email}</p>
-                              {user.phone && (
-                                <p className="text-xs text-gray-400 flex items-center">
-                                  <Phone className="h-3 w-3 mr-1" />
-                                  {user.phone}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`badge ${getRoleBadge(user.role)} capitalize`}>
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          {user.branch ? (
-                            <div className="flex items-center text-sm text-gray-600">
-                              <Building2 className="h-4 w-4 mr-1" />
-                              {user.branch.name}
-                            </div>
-                          ) : (
-                            <span className="text-sm text-gray-400">-</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          {user.is_active ? (
-                            <span className="badge badge-success flex items-center w-fit">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Active
-                            </span>
-                          ) : (
-                            <span className="badge badge-error flex items-center w-fit">
-                              <XCircle className="h-3 w-3 mr-1" />
-                              Inactive
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {user.created_at ? format(new Date(user.created_at), 'MMM dd, yyyy') : '-'}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => handleEdit(user)}
-                              className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
-                              title="Edit User"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleToggleActive(user)}
-                              className={`p-2 rounded-lg transition-all ${
-                                user.is_active
-                                  ? 'text-red-600 hover:bg-red-50'
-                                  : 'text-mint-600 hover:bg-mint-50'
-                              }`}
-                              title={user.is_active ? 'Deactivate' : 'Activate'}
-                            >
-                              {user.is_active ? <XCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Pagination */}
-            {pagination.pages > 1 && (
-              <div className="flex items-center justify-between mt-6">
-                <p className="text-sm text-gray-600">
-                  Showing {((pagination.page - 1) * pagination.per_page) + 1} to {Math.min(pagination.page * pagination.per_page, pagination.total)} of {pagination.total} users
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                    disabled={pagination.page === 1}
-                    className="btn btn-secondary disabled:opacity-50"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                    disabled={pagination.page >= pagination.pages}
-                    className="btn btn-secondary disabled:opacity-50"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
+          <ResponsiveTable
+            columns={[
+              {
+                key: 'user',
+                label: 'User',
+                render: (_, user) => (
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-lavender-400 rounded-full flex items-center justify-center">
+                      <User className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-800">{user.full_name}</p>
+                      <p className="text-sm text-gray-500">{user.email}</p>
+                      {user.phone && (
+                        <p className="text-xs text-gray-400 flex items-center">
+                          <Phone className="h-3 w-3 mr-1" />
+                          {user.phone}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )
+              },
+              {
+                key: 'role',
+                label: 'Role',
+                render: (role) => (
+                  <span className={`badge ${getRoleBadge(role)} capitalize`}>
+                    {role}
+                  </span>
+                )
+              },
+              {
+                key: 'branch',
+                label: 'Branch',
+                render: (branch) => branch ? (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Building2 className="h-4 w-4 mr-1" />
+                    {branch.name}
+                  </div>
+                ) : <span className="text-sm text-gray-400">-</span>
+              },
+              {
+                key: 'is_active',
+                label: 'Status',
+                render: (isActive) => isActive ? (
+                  <span className="badge badge-success flex items-center w-fit">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Active
+                  </span>
+                ) : (
+                  <span className="badge badge-error flex items-center w-fit">
+                    <XCircle className="h-3 w-3 mr-1" />
+                    Inactive
+                  </span>
+                )
+              },
+              {
+                key: 'created_at',
+                label: 'Joined',
+                render: (date) => <span className="text-sm text-gray-600">{date ? format(new Date(date), 'MMM dd, yyyy') : '-'}</span>
+              },
+              {
+                key: 'actions',
+                label: 'Actions',
+                render: (_, user) => (
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleEdit(user); }}
+                      className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
+                      title="Edit User"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleToggleActive(user); }}
+                      className={`p-2 rounded-lg transition-all ${
+                        user.is_active
+                          ? 'text-red-600 hover:bg-red-50'
+                          : 'text-mint-600 hover:bg-mint-50'
+                      }`}
+                      title={user.is_active ? 'Deactivate' : 'Activate'}
+                    >
+                      {user.is_active ? <XCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                    </button>
+                  </div>
+                )
+              }
+            ]}
+            data={users}
+            loading={loading}
+          />
         )}
 
         {/* Edit User Modal */}
@@ -346,7 +319,12 @@ const UserManagement = () => {
 
 // User Edit Modal Component
 const UserEditModal = ({ user, onClose, onSave }) => {
+  const isCreate = !user
   const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    full_name: '',
+    phone: '',
     role: user?.role || 'guest',
     is_active: user?.is_active !== undefined ? user.is_active : true,
     branch_id: user?.branch_id || ''
@@ -371,7 +349,15 @@ const UserEditModal = ({ user, onClose, onSave }) => {
     e.preventDefault()
     setLoading(true)
     try {
-      await onSave(formData)
+      if (isCreate) {
+        await onSave(formData, true)
+      } else {
+        await onSave({
+          role: formData.role,
+          is_active: formData.is_active,
+          branch_id: formData.branch_id || null
+        }, false)
+      }
     } finally {
       setLoading(false)
     }
@@ -382,11 +368,11 @@ const UserEditModal = ({ user, onClose, onSave }) => {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="glass rounded-2xl p-6 max-w-md w-full"
+        className="glass rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-display font-bold text-gray-800">
-            {user ? 'Edit User' : 'Add User'}
+            {isCreate ? 'Add User' : 'Edit User'}
           </h2>
           <button
             onClick={onClose}
@@ -405,6 +391,63 @@ const UserEditModal = ({ user, onClose, onSave }) => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {isCreate && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  className="input"
+                  required
+                  placeholder="John Doe"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="input"
+                  required
+                  placeholder="user@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password *
+                </label>
+                <input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="input"
+                  required
+                  minLength={6}
+                  placeholder="Min 6 characters"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="input"
+                  placeholder="+94 XX XXX XXXX"
+                />
+              </div>
+            </>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Role
@@ -451,13 +494,13 @@ const UserEditModal = ({ user, onClose, onSave }) => {
             </label>
           </div>
 
-          <div className="flex gap-2 pt-4">
+          <div className="flex gap-3 pt-4">
             <button
               type="submit"
               disabled={loading}
               className="btn btn-primary flex-1 disabled:opacity-50"
             >
-              {loading ? 'Saving...' : 'Save Changes'}
+              {loading ? 'Saving...' : isCreate ? 'Create User' : 'Save Changes'}
             </button>
             <button
               type="button"
