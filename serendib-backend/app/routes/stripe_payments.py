@@ -82,6 +82,85 @@ def create_payment_intent():
         return error_response(f'Error creating payment: {str(e)}', status_code=500)
 
 
+@stripe_bp.route('/create-checkout-session', methods=['POST'])
+@jwt_required()
+def create_checkout_session():
+    """
+    Create a Stripe Checkout session for a booking
+    Redirects user to Stripe's hosted checkout page
+    
+    Request Body:
+        booking_id: ID of the booking to pay for
+    """
+    try:
+        data = request.get_json()
+        user_id = get_jwt_identity()
+        
+        # Validate booking exists and belongs to user
+        booking = Booking.query.get(data.get('booking_id'))
+        if not booking:
+            return error_response('Booking not found', status_code=404)
+        
+        if booking.user_id != user_id:
+            return error_response('Unauthorized', status_code=403)
+        
+        # Check if already paid
+        existing_payment = Payment.query.filter_by(
+            booking_id=booking.booking_id,
+            payment_status='completed'
+        ).first()
+        if existing_payment:
+            return error_response('Booking already paid', status_code=400)
+        
+        # Get user for customer info
+        user = User.query.get(user_id)
+        
+        # Frontend URLs for redirect
+        frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+        success_url = f"{frontend_url}/booking/success?booking_id={booking.booking_id}&session_id={{CHECKOUT_SESSION_ID}}"
+        cancel_url = f"{frontend_url}/booking/cancel?booking_id={booking.booking_id}"
+        
+        # Amount in cents
+        amount = int(float(booking.total_amount) * 100)
+        
+        # Create Stripe Checkout session
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'lkr',
+                    'product_data': {
+                        'name': f'Hotel Booking #{booking.booking_id}',
+                        'description': f'Room booking at Serendib Hotels - Check-in: {booking.check_in_date}, Check-out: {booking.check_out_date}',
+                    },
+                    'unit_amount': amount,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=success_url,
+            cancel_url=cancel_url,
+            customer_email=user.email if user else None,
+            metadata={
+                'booking_id': str(booking.booking_id),
+                'user_id': str(user_id),
+            },
+        )
+        
+        return success_response(
+            data={
+                'checkout_url': checkout_session.url,
+                'session_id': checkout_session.id,
+            },
+            message='Checkout session created'
+        )
+        
+    except stripe.error.StripeError as e:
+        return error_response(f'Stripe error: {str(e)}', status_code=400)
+    except Exception as e:
+        return error_response(f'Error creating checkout session: {str(e)}', status_code=500)
+
+
 @stripe_bp.route('/confirm', methods=['POST'])
 @jwt_required()
 def confirm_payment():
@@ -89,21 +168,38 @@ def confirm_payment():
     Confirm payment after successful Stripe charge
     
     Request Body:
-        payment_intent_id: Stripe PaymentIntent ID
+        session_id: Stripe Checkout Session ID (for checkout flow)
+        payment_intent_id: Stripe PaymentIntent ID (for legacy flow)
         booking_id: Booking ID
     """
     try:
         data = request.get_json()
         user_id = get_jwt_identity()
         
+        session_id = data.get('session_id')
         payment_intent_id = data.get('payment_intent_id')
         booking_id = data.get('booking_id')
         
-        # Retrieve payment intent from Stripe
-        intent = stripe.PaymentIntent.retrieve(payment_intent_id)
-        
-        if intent.status != 'succeeded':
-            return error_response('Payment not completed', status_code=400)
+        # Handle Checkout Session flow
+        if session_id:
+            # Retrieve the checkout session
+            checkout_session = stripe.checkout.Session.retrieve(session_id)
+            
+            if checkout_session.payment_status != 'paid':
+                return error_response('Payment not completed', status_code=400)
+            
+            payment_intent_id = checkout_session.payment_intent
+            amount = checkout_session.amount_total / 100
+        elif payment_intent_id:
+            # Legacy flow: retrieve payment intent directly
+            intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+            
+            if intent.status != 'succeeded':
+                return error_response('Payment not completed', status_code=400)
+            
+            amount = intent.amount / 100
+        else:
+            return error_response('session_id or payment_intent_id required', status_code=400)
         
         # Get booking
         booking = Booking.query.get(booking_id)
@@ -114,10 +210,10 @@ def confirm_payment():
         payment = Payment(
             booking_id=booking.booking_id,
             user_id=user_id,
-            amount=intent.amount / 100,
-            payment_method='card',
+            amount=amount,
+            payment_method='credit_card',
+            payment_status='completed',
             transaction_id=payment_intent_id,
-            status='completed',
             payment_date=datetime.utcnow(),
         )
         

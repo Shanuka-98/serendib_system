@@ -6,10 +6,71 @@ import {
   ArrowLeft, Bed, Wifi, Car, Coffee, MapPin,
   Star, Info, AlertCircle
 } from 'lucide-react'
-import { roomAPI, bookingAPI, paymentAPI } from '../../services/api'
+import { roomAPI, bookingAPI, paymentAPI, stripeAPI } from '../../services/api'
 import { format, differenceInDays, parseISO } from 'date-fns'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
+
+// Step Indicator component for desktop
+const StepIndicator = ({ steps, currentStep, className }) => (
+  <div className={`items-center ${className || ''}`}>
+    {steps.map((step, index) => (
+      <div key={index} className="flex items-center">
+        <div className="flex items-center">
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+              index + 1 <= currentStep
+                ? 'bg-primary-500 text-white'
+                : 'bg-gray-200 text-gray-500'
+            }`}
+          >
+            {index + 1}
+          </div>
+          <span
+            className={`ml-2 text-sm font-medium ${
+              index + 1 <= currentStep ? 'text-gray-800' : 'text-gray-500'
+            }`}
+          >
+            {step}
+          </span>
+        </div>
+        {index < steps.length - 1 && (
+          <div
+            className={`w-12 h-0.5 mx-3 ${
+              index + 1 < currentStep ? 'bg-primary-500' : 'bg-gray-200'
+            }`}
+          />
+        )}
+      </div>
+    ))}
+  </div>
+)
+
+// Step Indicator component for mobile (compact version)
+const StepIndicatorCompact = ({ steps, currentStep, className }) => (
+  <div className={`items-center gap-2 ${className || ''}`}>
+    {steps.map((step, index) => (
+      <div key={index} className="flex items-center">
+        <div
+          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+            index + 1 <= currentStep
+              ? 'bg-primary-500 text-white'
+              : 'bg-gray-200 text-gray-500'
+          }`}
+        >
+          {index + 1}
+        </div>
+        {index < steps.length - 1 && (
+          <div
+            className={`w-6 h-0.5 mx-1 ${
+              index + 1 < currentStep ? 'bg-primary-500' : 'bg-gray-200'
+            }`}
+          />
+        )}
+      </div>
+    ))}
+  </div>
+)
 
 const BookingPage = () => {
   const [searchParams] = useSearchParams()
@@ -28,7 +89,7 @@ const BookingPage = () => {
   // Booking form data
   const [formData, setFormData] = useState({
     special_requests: '',
-    payment_method: 'card',
+    payment_method: 'credit_card',
     card_number: '',
     card_name: '',
     card_expiry: '',
@@ -63,7 +124,7 @@ const BookingPage = () => {
     try {
       setLoading(true)
       const response = await roomAPI.getRoom(roomId)
-      setRoom(response.data.data)
+      setRoom(response.data.data.room)
     } catch (error) {
       console.error('Error fetching room:', error)
       toast.error('Failed to load room details')
@@ -113,25 +174,32 @@ const BookingPage = () => {
     try {
       const bookingData = {
         room_id: parseInt(roomId),
-        check_in: checkIn,
-        check_out: checkOut,
-        guests: parseInt(guests),
+        check_in_date: checkIn,
+        check_out_date: checkOut,
+        number_of_guests: parseInt(guests),
         special_requests: formData.special_requests || undefined
       }
 
       // Create booking
       const bookingResponse = await bookingAPI.createBooking(bookingData)
-      const booking = bookingResponse.data.data
+      const booking = bookingResponse.data.data.booking
       
-      // Process payment
+      // Handle payment based on method
+      if (formData.payment_method === 'credit_card') {
+        // Redirect to Stripe Checkout for card payments
+        const checkoutResponse = await stripeAPI.createCheckoutSession({
+          booking_id: booking.booking_id
+        })
+        
+        // Redirect to Stripe hosted checkout page
+        window.location.href = checkoutResponse.data.data.checkout_url
+        return
+      }
+      
+      // For non-card payments (cash, bank transfer), use simple payment API
       const paymentData = {
         booking_id: booking.booking_id,
-        amount: bookingSummary.total,
-        payment_method: formData.payment_method,
-        card_number: formData.payment_method === 'card' ? formData.card_number : undefined,
-        card_name: formData.payment_method === 'card' ? formData.card_name : undefined,
-        card_expiry: formData.payment_method === 'card' ? formData.card_expiry : undefined,
-        card_cvv: formData.payment_method === 'card' ? formData.card_cvv : undefined
+        payment_method: formData.payment_method
       }
 
       await paymentAPI.processPayment(paymentData)
@@ -355,71 +423,21 @@ const BookingPage = () => {
                     onChange={handleInputChange}
                     className="input"
                   >
-                    <option value="card">Credit/Debit Card</option>
+                    <option value="credit_card">Credit/Debit Card</option>
                     <option value="cash">Cash on Arrival</option>
                     <option value="bank_transfer">Bank Transfer</option>
                   </select>
                 </div>
 
-                {formData.payment_method === 'card' && (
-                  <div className="space-y-4 p-4 bg-gray-50 rounded-xl animate-fade-in">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Card Number
-                      </label>
-                      <input
-                        type="text"
-                        name="card_number"
-                        value={formData.card_number}
-                        onChange={handleInputChange}
-                        className="input"
-                        placeholder="1234 5678 9012 3456"
-                        maxLength={19}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Cardholder Name
-                      </label>
-                      <input
-                        type="text"
-                        name="card_name"
-                        value={formData.card_name}
-                        onChange={handleInputChange}
-                        className="input"
-                        placeholder="John Doe"
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
+                {formData.payment_method === 'credit_card' && (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <Shield className="h-5 w-5 text-blue-600" />
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Expiry Date
-                        </label>
-                        <input
-                          type="text"
-                          name="card_expiry"
-                          value={formData.card_expiry}
-                          onChange={handleInputChange}
-                          className="input"
-                          placeholder="MM/YY"
-                          maxLength={5}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          CVV
-                        </label>
-                        <input
-                          type="text"
-                          name="card_cvv"
-                          value={formData.card_cvv}
-                          onChange={handleInputChange}
-                          className="input"
-                          placeholder="123"
-                          maxLength={3}
-                        />
+                        <p className="text-sm font-medium text-blue-800">Secure Payment</p>
+                        <p className="text-sm text-blue-600">
+                          You will be redirected to Stripe's secure checkout page to complete your payment.
+                        </p>
                       </div>
                     </div>
                   </div>

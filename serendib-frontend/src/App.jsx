@@ -19,6 +19,8 @@ import BookingDetailsPage from './pages/guest/BookingDetails'
 import ServiceRequestsPage from './pages/guest/ServiceRequests'
 import LoyaltyPage from './pages/guest/Loyalty'
 import ProfilePage from './pages/guest/Profile'
+import BookingSuccess from './pages/guest/BookingSuccess'
+import BookingCancel from './pages/guest/BookingCancel'
 
 // Staff Pages
 import StaffDashboard from './pages/staff/Dashboard'
@@ -56,6 +58,8 @@ function App() {
           <Route path="/service-requests" element={<ProtectedRoute><ServiceRequestsPage /></ProtectedRoute>} />
           <Route path="/loyalty" element={<ProtectedRoute><LoyaltyPage /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/booking/success" element={<ProtectedRoute><BookingSuccess /></ProtectedRoute>} />
+          <Route path="/booking/cancel" element={<ProtectedRoute><BookingCancel /></ProtectedRoute>} />
           
           {/* Staff Routes */}
           <Route path="/staff" element={<ProtectedRoute roles={['staff', 'admin']}><StaffDashboard /></ProtectedRoute>} />

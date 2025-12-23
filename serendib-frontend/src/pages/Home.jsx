@@ -1,11 +1,30 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { 
   Hotel, MapPin, Star, Award, Clock, Shield, 
   Sparkles, ChevronRight, Calendar, Users
 } from 'lucide-react'
+import { format, addDays } from 'date-fns'
 
 const HomePage = () => {
+  const navigate = useNavigate()
+  
+  // Search form state
+  const [branchId, setBranchId] = useState('')
+  const [checkIn, setCheckIn] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [checkOut, setCheckOut] = useState(format(addDays(new Date(), 2), 'yyyy-MM-dd'))
+  const [guests, setGuests] = useState('2')
+
+  const handleSearch = () => {
+    const params = new URLSearchParams()
+    if (branchId) params.set('branch_id', branchId)
+    if (checkIn) params.set('check_in', checkIn)
+    if (checkOut) params.set('check_out', checkOut)
+    if (guests) params.set('guests', guests)
+    navigate(`/rooms?${params.toString()}`)
+  }
+
   const branches = [
     {
       id: 1,
@@ -109,11 +128,15 @@ const HomePage = () => {
                   </label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                    <select className="input pl-10">
-                      <option>All Locations</option>
-                      <option>Colombo</option>
-                      <option>Mirissa</option>
-                      <option>Kandy</option>
+                    <select 
+                      className="input pl-10"
+                      value={branchId}
+                      onChange={(e) => setBranchId(e.target.value)}
+                    >
+                      <option value="">All Locations</option>
+                      <option value="1">Colombo</option>
+                      <option value="2">Mirissa</option>
+                      <option value="3">Kandy</option>
                     </select>
                   </div>
                 </div>
@@ -123,7 +146,13 @@ const HomePage = () => {
                   </label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                    <input type="date" className="input pl-10" />
+                    <input 
+                      type="date" 
+                      className="input pl-10"
+                      value={checkIn}
+                      onChange={(e) => setCheckIn(e.target.value)}
+                      min={format(new Date(), 'yyyy-MM-dd')}
+                    />
                   </div>
                 </div>
                 <div className="text-left">
@@ -132,7 +161,13 @@ const HomePage = () => {
                   </label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                    <input type="date" className="input pl-10" />
+                    <input 
+                      type="date" 
+                      className="input pl-10"
+                      value={checkOut}
+                      onChange={(e) => setCheckOut(e.target.value)}
+                      min={checkIn}
+                    />
                   </div>
                 </div>
                 <div className="text-left">
@@ -141,21 +176,26 @@ const HomePage = () => {
                   </label>
                   <div className="relative">
                     <Users className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                    <select className="input pl-10">
-                      <option>1 Guest</option>
-                      <option>2 Guests</option>
-                      <option>3 Guests</option>
-                      <option>4+ Guests</option>
+                    <select 
+                      className="input pl-10"
+                      value={guests}
+                      onChange={(e) => setGuests(e.target.value)}
+                    >
+                      <option value="1">1 Guest</option>
+                      <option value="2">2 Guests</option>
+                      <option value="3">3 Guests</option>
+                      <option value="4">4+ Guests</option>
                     </select>
                   </div>
                 </div>
               </div>
-              <Link to="/rooms">
-                <button className="btn btn-primary w-full mt-6 text-lg py-4">
-                  Search Available Rooms
-                  <ChevronRight className="inline ml-2 h-5 w-5" />
-                </button>
-              </Link>
+              <button 
+                onClick={handleSearch}
+                className="btn btn-primary w-full mt-6 text-lg py-4"
+              >
+                Search Available Rooms
+                <ChevronRight className="inline ml-2 h-5 w-5" />
+              </button>
             </motion.div>
           </motion.div>
         </div>

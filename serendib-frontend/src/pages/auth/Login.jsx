@@ -24,7 +24,7 @@ const LoginPage = () => {
       } else if (result.user.role === 'staff') {
         navigate('/staff')
       } else {
-        navigate('/rooms')
+        navigate('/')
       }
     }
     
@@ -45,14 +45,26 @@ const LoginPage = () => {
         className="relative z-10 w-full max-w-md"
       >
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-lavender-500 rounded-2xl mb-4 shadow-lg">
-            <Hotel className="h-8 w-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-display font-bold text-gray-800 mb-2">
+        <div className="text-center mb-6">
+          <Link to="/" className="inline-block">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <img 
+                src="/logo.png" 
+                alt="Serendib Hotels" 
+                className="h-28 w-auto object-contain mx-auto"
+              />
+              <span className="block text-2xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-lavender-600 -mt-1">
+                Serendib Hotels
+              </span>
+            </motion.div>
+          </Link>
+          <h1 className="text-4xl font-display font-bold text-gray-800 mt-4 mb-2">
             Welcome Back
           </h1>
-          <p className="text-gray-600">Sign in to your Serendib account</p>
+          <p className="text-lg text-gray-600">Sign in to your account</p>
         </div>
 
         {/* Login Form */}
@@ -137,6 +149,7 @@ const LoginPage = () => {
             <div className="text-xs text-gray-600 space-y-1">
               <p><strong>Admin:</strong> admin@serendibhotels.lk / admin123</p>
               <p><strong>Guest:</strong> john.doe@example.com / guest123</p>
+              <p><strong>Staff:</strong> staff@serendibhotels.lk / Test@1234</p>
             </div>
           </div>
         </div>

@@ -26,12 +26,17 @@ def create_app(config_name='development'):
     mail.init_app(app)
     migrate.init_app(app, db)
     
-    # Enable CORS - Allow ALL origins, methods, and headers for development
+    # Enable CORS - Allow localhost and ngrok for development/testing
     CORS(app, resources={
         r"/api/*": {
-            "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
+            "origins": [
+                "http://localhost:5173", 
+                "http://127.0.0.1:5173",
+                "https://nigel-unstation-meaghan.ngrok-free.dev",
+                # Allow any ngrok subdomain for flexibility
+            ],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization", "Accept", "X-Requested-With"],
+            "allow_headers": ["Content-Type", "Authorization", "Accept", "X-Requested-With", "ngrok-skip-browser-warning"],
             "supports_credentials": True,
             "expose_headers": ["Content-Type", "Authorization"]
         }

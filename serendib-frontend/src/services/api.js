@@ -179,5 +179,7 @@ export const stripeAPI = {
   createPaymentIntent: (data) => api.post('/stripe/create-intent', data),
   /** Confirm payment after successful Stripe charge */
   confirmPayment: (data) => api.post('/stripe/confirm', data),
+  /** Create a Stripe Checkout session for redirect-based payment */
+  createCheckoutSession: (data) => api.post('/stripe/create-checkout-session', data),
 }
 

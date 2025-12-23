@@ -39,9 +39,8 @@ const RoomSearchPage = () => {
 
   useEffect(() => {
     fetchBranches()
-    if (checkIn && checkOut) {
-      searchRooms()
-    }
+    // Always search on initial load, even without dates
+    searchRooms()
   }, [])
 
   const fetchBranches = async () => {
@@ -80,9 +79,14 @@ const RoomSearchPage = () => {
       // Use getRooms endpoint which supports availability filtering
       const response = await roomAPI.getRooms(params)
       
+      console.log('API Response:', response)
+      console.log('Response data:', response.data)
+      
       // API returns: { success: true, data: { rooms: [...], pagination: {...} } }
       const apiResponse = response.data
       const roomsData = apiResponse?.data?.rooms || apiResponse?.data || []
+      
+      console.log('Rooms data extracted:', roomsData)
       
       // Ensure rooms is always an array
       setRooms(Array.isArray(roomsData) ? roomsData : [])
