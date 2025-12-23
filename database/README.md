@@ -42,6 +42,119 @@ python fix_passwords.py
 | **PropertyConfig** | Branch configs |
 | **Promotion** | Discount codes |
 
+## Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    User ||--|| Staff : "is_staff_profile"
+    User ||--|| LoyaltyProgram : "has_loyalty"
+    User ||--o{ Booking : "makes"
+    User ||--o{ Payment : "pays"
+    User ||--o{ ServiceRequest : "requests"
+    User ||--o{ Notification : "receives"
+    User ||--o{ AuditLog : "triggers"
+    
+    Branch ||--o{ User : "employs"
+    Branch ||--o{ Room : "contains"
+    Branch ||--o{ Booking : "hosts"
+    Branch ||--o{ Staff : "employs"
+    Branch ||--o{ Promotion : "offers"
+    Branch ||--o{ PropertyConfig : "configures"
+
+    Room ||--o{ Booking : "reserved_in"
+    
+    Booking ||--o{ Payment : "has"
+    Booking ||--o{ ServiceRequest : "includes"
+
+    User {
+        int user_id PK
+        string email
+        string full_name
+        enum role
+        int branch_id FK
+    }
+
+    Branch {
+        int branch_id PK
+        string name
+        string location
+        string city
+    }
+
+    Room {
+        int room_id PK
+        int branch_id FK
+        string room_number
+        enum room_type
+        decimal price_per_night
+    }
+
+    Booking {
+        int booking_id PK
+        int user_id FK
+        int room_id FK
+        int branch_id FK
+        date check_in_date
+        date check_out_date
+        decimal total_amount
+    }
+
+    Payment {
+        int payment_id PK
+        int booking_id FK
+        int user_id FK
+        decimal amount
+        enum payment_status
+    }
+
+    Staff {
+        int staff_id PK
+        int user_id FK
+        int branch_id FK
+        string position
+    }
+
+    LoyaltyProgram {
+        int loyalty_id PK
+        int user_id FK
+        int points
+        enum tier
+    }
+
+    ServiceRequest {
+        int request_id PK
+        int booking_id FK
+        int user_id FK
+        enum service_type
+    }
+
+    Notification {
+        int notification_id PK
+        int user_id FK
+        text message
+    }
+
+    Promotion {
+        int promotion_id PK
+        int branch_id FK
+        string promo_code
+    }
+
+    PropertyConfig {
+        int config_id PK
+        int branch_id FK
+        string config_key
+    }
+
+    AuditLog {
+        int log_id PK
+        int user_id FK
+        string action
+    }
+```
+
+</details>
+
 ## Test Credentials
 
 After running `fix_passwords.py`:
