@@ -318,27 +318,27 @@ INSERT INTO Staff (user_id, branch_id, position, department, hire_date, employee
 
 -- Insert Rooms for Colombo Branch
 INSERT INTO Room (branch_id, room_number, room_type, capacity, price_per_night, floor, amenities, description, image_urls) VALUES
-(1, '101', 'standard', 2, 12000.00, 1, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mini Bar'), 'Comfortable standard room with city view', JSON_ARRAY('/images/rooms/colombo-101-1.jpg', '/images/rooms/colombo-101-2.jpg')),
-(1, '102', 'standard', 2, 12000.00, 1, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mini Bar'), 'Comfortable standard room with city view', JSON_ARRAY('/images/rooms/colombo-102-1.jpg')),
-(1, '201', 'deluxe', 2, 18000.00, 2, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mini Bar', 'Balcony', 'Coffee Maker'), 'Spacious deluxe room with balcony', JSON_ARRAY('/images/rooms/colombo-201-1.jpg', '/images/rooms/colombo-201-2.jpg')),
-(1, '202', 'deluxe', 3, 20000.00, 2, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mini Bar', 'Balcony', 'Coffee Maker'), 'Deluxe room with extra bed capacity', JSON_ARRAY('/images/rooms/colombo-202-1.jpg')),
-(1, '301', 'suite', 4, 35000.00, 3, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mini Bar', 'Balcony', 'Coffee Maker', 'Living Area', 'Jacuzzi'), 'Luxurious suite with living area', JSON_ARRAY('/images/rooms/colombo-301-1.jpg', '/images/rooms/colombo-301-2.jpg', '/images/rooms/colombo-301-3.jpg')),
-(1, 'P01', 'penthouse', 6, 75000.00, 5, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mini Bar', 'Balcony', 'Coffee Maker', 'Living Area', 'Jacuzzi', 'Kitchen', 'Ocean View'), 'Premium penthouse with stunning views', JSON_ARRAY('/images/rooms/colombo-p01-1.jpg', '/images/rooms/colombo-p01-2.jpg'));
+(1, '101', 'standard', 2, 12000.00, 1, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mini Bar'), 'Comfortable standard room with city view', JSON_ARRAY('/images/rooms/colombo-standard.png')),
+(1, '102', 'standard', 2, 12000.00, 1, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mini Bar'), 'Comfortable standard room with city view', JSON_ARRAY('/images/rooms/colombo-standard.png')),
+(1, '201', 'deluxe', 2, 18000.00, 2, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mini Bar', 'Balcony', 'Coffee Maker'), 'Spacious deluxe room with balcony', JSON_ARRAY('/images/rooms/colombo-deluxe.png')),
+(1, '202', 'deluxe', 3, 20000.00, 2, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mini Bar', 'Balcony', 'Coffee Maker'), 'Deluxe room with extra bed capacity', JSON_ARRAY('/images/rooms/colombo-deluxe.png')),
+(1, '301', 'suite', 4, 35000.00, 3, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mini Bar', 'Balcony', 'Coffee Maker', 'Living Area', 'Jacuzzi'), 'Luxurious suite with living area', JSON_ARRAY('/images/rooms/colombo-suite.png')),
+(1, 'P01', 'penthouse', 6, 75000.00, 5, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mini Bar', 'Balcony', 'Coffee Maker', 'Living Area', 'Jacuzzi', 'Kitchen', 'Ocean View'), 'Premium penthouse with stunning views', JSON_ARRAY('/images/rooms/colombo-penthouse.png'));
 
 -- Insert Rooms for Mirissa Branch (Beach Resort)
 INSERT INTO Room (branch_id, room_number, room_type, capacity, price_per_night, floor, amenities, description, image_urls) VALUES
-(2, 'B101', 'standard', 2, 15000.00, 1, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Beach Access'), 'Beach view standard room', JSON_ARRAY('/images/rooms/mirissa-b101-1.jpg')),
-(2, 'B102', 'standard', 2, 15000.00, 1, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Beach Access'), 'Beach view standard room', JSON_ARRAY('/images/rooms/mirissa-b102-1.jpg')),
-(2, 'B201', 'deluxe', 2, 25000.00, 2, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Beach Access', 'Ocean View', 'Private Deck'), 'Oceanfront deluxe room with deck', JSON_ARRAY('/images/rooms/mirissa-b201-1.jpg', '/images/rooms/mirissa-b201-2.jpg')),
-(2, 'B202', 'deluxe', 3, 27000.00, 2, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Beach Access', 'Ocean View', 'Private Deck'), 'Oceanfront deluxe room with extra bed', JSON_ARRAY('/images/rooms/mirissa-b202-1.jpg')),
-(2, 'V01', 'suite', 4, 45000.00, 1, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Beach Access', 'Ocean View', 'Private Deck', 'Outdoor Shower', 'Living Area'), 'Beachfront villa suite', JSON_ARRAY('/images/rooms/mirissa-v01-1.jpg', '/images/rooms/mirissa-v01-2.jpg'));
+(2, 'B101', 'standard', 2, 15000.00, 1, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Beach Access'), 'Beach view standard room', JSON_ARRAY('/images/rooms/mirissa-standard.png')),
+(2, 'B102', 'standard', 2, 15000.00, 1, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Beach Access'), 'Beach view standard room', JSON_ARRAY('/images/rooms/mirissa-standard.png')),
+(2, 'B201', 'deluxe', 2, 25000.00, 2, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Beach Access', 'Ocean View', 'Private Deck'), 'Oceanfront deluxe room with deck', JSON_ARRAY('/images/rooms/mirissa-deluxe.png')),
+(2, 'B202', 'deluxe', 3, 27000.00, 2, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Beach Access', 'Ocean View', 'Private Deck'), 'Oceanfront deluxe room with extra bed', JSON_ARRAY('/images/rooms/mirissa-deluxe.png')),
+(2, 'V01', 'suite', 4, 45000.00, 1, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Beach Access', 'Ocean View', 'Private Deck', 'Outdoor Shower', 'Living Area'), 'Beachfront villa suite', JSON_ARRAY('/images/rooms/mirissa-suite.png'));
 
 -- Insert Rooms for Kandy Branch (Hill Country)
 INSERT INTO Room (branch_id, room_number, room_type, capacity, price_per_night, floor, amenities, description, image_urls) VALUES
-(3, 'H101', 'standard', 2, 10000.00, 1, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mountain View'), 'Hill view standard room', JSON_ARRAY('/images/rooms/kandy-h101-1.jpg')),
-(3, 'H102', 'standard', 2, 10000.00, 1, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mountain View'), 'Hill view standard room', JSON_ARRAY('/images/rooms/kandy-h102-1.jpg')),
-(3, 'H201', 'deluxe', 2, 16000.00, 2, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mountain View', 'Fireplace', 'Tea Garden View'), 'Deluxe room with tea estate views', JSON_ARRAY('/images/rooms/kandy-h201-1.jpg', '/images/rooms/kandy-h201-2.jpg')),
-(3, 'H301', 'suite', 4, 32000.00, 3, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mountain View', 'Fireplace', 'Tea Garden View', 'Living Area', 'Bathtub'), 'Panoramic suite with mountain views', JSON_ARRAY('/images/rooms/kandy-h301-1.jpg', '/images/rooms/kandy-h301-2.jpg', '/images/rooms/kandy-h301-3.jpg'));
+(3, 'H101', 'standard', 2, 10000.00, 1, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mountain View'), 'Hill view standard room', JSON_ARRAY('/images/rooms/kandy-standard.png')),
+(3, 'H102', 'standard', 2, 10000.00, 1, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mountain View'), 'Hill view standard room', JSON_ARRAY('/images/rooms/kandy-standard.png')),
+(3, 'H201', 'deluxe', 2, 16000.00, 2, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mountain View', 'Fireplace', 'Tea Garden View'), 'Deluxe room with tea estate views', JSON_ARRAY('/images/rooms/kandy-deluxe.png')),
+(3, 'H301', 'suite', 4, 32000.00, 3, JSON_ARRAY('WiFi', 'TV', 'Air Conditioning', 'Mountain View', 'Fireplace', 'Tea Garden View', 'Living Area', 'Bathtub'), 'Panoramic suite with mountain views', JSON_ARRAY('/images/rooms/kandy-suite.png'));
 
 -- Insert Sample Bookings
 INSERT INTO Booking (user_id, room_id, branch_id, check_in_date, check_out_date, total_amount, status, number_of_guests, special_requests) VALUES

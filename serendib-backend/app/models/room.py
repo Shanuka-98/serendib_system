@@ -55,6 +55,17 @@ class Room(db.Model):
             # If branch relationship fails to load, just use None
             print(f"Warning: Could not load branch for room {self.room_id}: {str(e)}")
         
+        # Parse image_urls if it's a JSON string
+        image_urls = self.image_urls
+        if isinstance(image_urls, str):
+            try:
+                import json
+                image_urls = json.loads(image_urls)
+            except (json.JSONDecodeError, TypeError):
+                image_urls = []
+        elif image_urls is None:
+            image_urls = []
+        
         data = {
             'room_id': self.room_id,
             'branch_id': self.branch_id,
@@ -68,7 +79,7 @@ class Room(db.Model):
             'amenities': self.amenities or [],
             'floor': self.floor,
             'description': self.description,
-            'image_urls': self.image_urls or [],
+            'image_urls': image_urls,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
