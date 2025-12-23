@@ -213,6 +213,7 @@
 
 ### 3. Development Tools
 *   **VS Code**: Primary IDE.
+*   **XAMPP**: Local server environment for MySQL database.
 
 ### 4. Frameworks & Libraries
 
