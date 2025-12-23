@@ -41,7 +41,6 @@ python fix_passwords.py
 | **AuditLog** | Audit trail |
 | **PropertyConfig** | Branch configs |
 | **Promotion** | Discount codes |
-
 ## Entity Relationship Diagram
 
 ```mermaid
@@ -68,10 +67,20 @@ erDiagram
 
     User {
         int user_id PK
-        string email
+        string email UK
+        string password_hash
         string full_name
-        enum role
+        string phone
+        enum role "guest|staff|admin"
         int branch_id FK
+        bool is_verified
+        string verification_token
+        string reset_token
+        datetime reset_token_expiry
+        bool is_active
+        datetime last_login
+        datetime created_at
+        datetime updated_at
     }
 
     Branch {
@@ -79,14 +88,27 @@ erDiagram
         string name
         string location
         string city
+        text address
+        decimal tax_rate
+        json contact_info
+        datetime created_at
+        datetime updated_at
     }
 
     Room {
         int room_id PK
         int branch_id FK
         string room_number
-        enum room_type
+        enum room_type "standard|deluxe|suite|penthouse"
+        int capacity
         decimal price_per_night
+        enum status "available|occupied|maintenance|reserved"
+        json amenities
+        int floor
+        text description
+        json image_urls
+        datetime created_at
+        datetime updated_at
     }
 
     Booking {
@@ -97,6 +119,14 @@ erDiagram
         date check_in_date
         date check_out_date
         decimal total_amount
+        enum status "pending|confirmed|checked_in|checked_out|cancelled"
+        datetime booking_date
+        text special_requests
+        int number_of_guests
+        text cancellation_reason
+        datetime cancelled_at
+        datetime checked_in_at
+        datetime checked_out_at
     }
 
     Payment {
@@ -104,56 +134,105 @@ erDiagram
         int booking_id FK
         int user_id FK
         decimal amount
-        enum payment_status
+        enum payment_method "credit_card|debit_card|paypal|bank_transfer|cash"
+        enum payment_status "pending|completed|failed|refunded"
+        string transaction_id
+        datetime payment_date
+        decimal refund_amount
+        datetime refund_date
+        json payment_details
     }
 
     Staff {
         int staff_id PK
-        int user_id FK
+        int user_id FK "UNIQUE"
         int branch_id FK
         string position
+        enum department "front_desk|housekeeping|maintenance|food_beverage|management|security"
+        date hire_date
+        json schedule
+        string employee_id UK
+        decimal salary
+        bool is_active
     }
 
     LoyaltyProgram {
         int loyalty_id PK
-        int user_id FK
+        int user_id FK "UNIQUE"
         int points
-        enum tier
+        enum tier "bronze|silver|gold|platinum"
+        datetime join_date
+        int lifetime_points
+        datetime last_activity
     }
 
     ServiceRequest {
         int request_id PK
         int booking_id FK
         int user_id FK
-        enum service_type
+        enum service_type "room_service|housekeeping|maintenance|concierge|laundry|spa|other"
+        text description
+        enum status "pending|in_progress|completed|cancelled"
+        enum priority "low|medium|high|urgent"
+        datetime requested_at
+        datetime completed_at
+        int assigned_staff_id FK
+        text notes
     }
 
     Notification {
         int notification_id PK
         int user_id FK
         text message
+        enum notification_type "booking|payment|service|promotion|system|loyalty"
+        bool is_read
+        datetime sent_at
+        int related_id
+        string action_url
     }
 
     Promotion {
         int promotion_id PK
         int branch_id FK
-        string promo_code
+        string title
+        text description
+        decimal discount_percentage
+        decimal discount_amount
+        string promo_code UK
+        date start_date
+        date end_date
+        bool is_active
+        text terms_conditions
+        decimal min_booking_amount
+        decimal max_discount
+        int usage_limit
+        int usage_count
+        datetime created_at
     }
 
     PropertyConfig {
         int config_id PK
         int branch_id FK
         string config_key
+        text config_value
+        text description
+        datetime created_at
+        datetime updated_at
     }
 
     AuditLog {
         int log_id PK
         int user_id FK
         string action
+        string table_name
+        int record_id
+        json old_values
+        json new_values
+        datetime timestamp
+        string ip_address
+        text user_agent
     }
 ```
-
-</details>
 
 ## Test Credentials
 
@@ -162,7 +241,7 @@ After running `fix_passwords.py`:
 | Role | Email | Password |
 |------|-------|----------|
 | Admin | `admin@serendibhotels.lk` | `admin123` |
-| Staff | `staff1.colombo@serendibhotels.lk` | `staff123` |
+| Staff | `staff@serendibhotels.lk` | `Test@1234` |
 | Guest | `john.doe@example.com` | `guest123` |
 
 ## Sample Data

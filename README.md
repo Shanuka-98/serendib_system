@@ -153,7 +153,7 @@
 | Role | Email | Password |
 |------|-------|----------|
 | **Admin** | `admin@serendibhotels.lk` | `admin123` |
-| **Staff** | `staff1.colombo@serendibhotels.lk` | `staff123` |
+| **Staff** | `staff@serendibhotels.lk` | `Test@1234` |
 | **Guest** | `john.doe@example.com` | `guest123` |
 
 *(Note: Passwords must be hashed correctly. Use `fix_passwords.py` if login fails after fresh import)*

@@ -294,8 +294,9 @@ INSERT INTO User (email, password_hash, full_name, phone, role, branch_id, is_ve
 ('manager.mirissa@serendibhotels.lk', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ztJ.WQN3MxCS', 'Saman Fernando', '+94703234567', 'admin', 2, TRUE),
 ('manager.kandy@serendibhotels.lk', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ztJ.WQN3MxCS', 'Kamala Silva', '+94704234567', 'admin', 3, TRUE);
 
--- Insert Staff Users (password: staff123)
+-- Insert Staff Users (password: Test@1234 for demo, staff123 for others)
 INSERT INTO User (email, password_hash, full_name, phone, role, branch_id, is_verified) VALUES
+('staff@serendibhotels.lk', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ztJ.WQN3MxCS', 'Demo Staff User', '+94700000000', 'staff', 1, TRUE),
 ('staff1.colombo@serendibhotels.lk', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ztJ.WQN3MxCS', 'Dilshan Jayawardena', '+94705234567', 'staff', 1, TRUE),
 ('staff2.colombo@serendibhotels.lk', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ztJ.WQN3MxCS', 'Priya Rodrigo', '+94706234567', 'staff', 1, TRUE),
 ('staff1.mirissa@serendibhotels.lk', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ztJ.WQN3MxCS', 'Kasun Bandara', '+94707234567', 'staff', 2, TRUE),

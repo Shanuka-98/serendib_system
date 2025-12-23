@@ -1,5 +1,4 @@
 erDiagram
-    %% Relationships
     User ||--|| Staff : "is_staff_profile"
     User ||--|| LoyaltyProgram : "has_loyalty"
     User ||--o{ Booking : "makes"
@@ -20,10 +19,9 @@ erDiagram
     Booking ||--o{ Payment : "has"
     Booking ||--o{ ServiceRequest : "includes"
 
-    %% Table Definitions
     User {
         int user_id PK
-        string email
+        string email UK
         string password_hash
         string full_name
         string phone
@@ -90,7 +88,7 @@ erDiagram
         int booking_id FK
         int user_id FK
         decimal amount
-        enum payment_method
+        enum payment_method "credit_card|debit_card|paypal|bank_transfer|cash"
         enum payment_status "pending|completed|failed|refunded"
         string transaction_id
         datetime payment_date
@@ -104,10 +102,10 @@ erDiagram
         int user_id FK "UNIQUE"
         int branch_id FK
         string position
-        enum department
+        enum department "front_desk|housekeeping|maintenance|food_beverage|management|security"
         date hire_date
         json schedule
-        string employee_id
+        string employee_id UK
         decimal salary
         bool is_active
     }
@@ -126,10 +124,10 @@ erDiagram
         int request_id PK
         int booking_id FK
         int user_id FK
-        enum service_type
+        enum service_type "room_service|housekeeping|maintenance|concierge|laundry|spa|other"
         text description
-        enum status
-        enum priority
+        enum status "pending|in_progress|completed|cancelled"
+        enum priority "low|medium|high|urgent"
         datetime requested_at
         datetime completed_at
         int assigned_staff_id FK
@@ -140,7 +138,7 @@ erDiagram
         int notification_id PK
         int user_id FK
         text message
-        enum notification_type
+        enum notification_type "booking|payment|service|promotion|system|loyalty"
         bool is_read
         datetime sent_at
         int related_id
@@ -154,7 +152,7 @@ erDiagram
         text description
         decimal discount_percentage
         decimal discount_amount
-        string promo_code
+        string promo_code UK
         date start_date
         date end_date
         bool is_active

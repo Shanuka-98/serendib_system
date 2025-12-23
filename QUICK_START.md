@@ -66,7 +66,7 @@ python fix_passwords.py
 
 This will update all passwords with correct bcrypt hashes:
 - **Admin:** `admin123`
-- **Staff:** `staff123`
+- **Staff:** `Test@1234`
 - **Guest:** `guest123`
 
 ### Step 2: Backend Setup
@@ -126,7 +126,7 @@ Frontend should be running on: **http://localhost:5173**
    - Click "Login" or visit: http://localhost:5173/login
    - Use test credentials (after running `fix_passwords.py`):
      - **Admin:** `admin@serendibhotels.lk` / `admin123`
-     - **Staff:** `staff1.colombo@serendibhotels.lk` / `staff123`
+     - **Staff:** `staff@serendibhotels.lk` / `Test@1234`
      - **Guest:** `john.doe@example.com` / `guest123`
    
    **If login fails:** Make sure you ran `python fix_passwords.py` after importing the schema!

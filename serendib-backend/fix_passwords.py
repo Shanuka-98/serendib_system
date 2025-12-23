@@ -5,7 +5,8 @@ Run this script after importing schema.sql to fix all password hashes.
 This script will update all user passwords with correct bcrypt hashes.
 Default passwords:
 - Admin: admin123
-- Staff: staff123
+- Staff (demo): Test@1234 (staff@serendibhotels.lk)
+- Staff (others): staff123
 - Guest: guest123
 """
 
@@ -43,13 +44,21 @@ def fix_passwords():
             'guest': 'guest123'
         }
         
+        # Special password for demo staff user
+        demo_staff_email = 'staff@serendibhotels.lk'
+        demo_staff_password = 'Test@1234'
+        
         updated_count = 0
         error_count = 0
         
         for user in users:
             try:
-                # Get password based on role
-                password = password_map.get(user.role, 'guest123')
+                # Check if this is the demo staff user
+                if user.email == demo_staff_email:
+                    password = demo_staff_password
+                else:
+                    # Get password based on role
+                    password = password_map.get(user.role, 'guest123')
                 
                 # Generate new password hash
                 new_hash = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -79,7 +88,7 @@ def fix_passwords():
             print("=" * 60)
             print("\n📝 Test Credentials:")
             print("   Admin: admin@serendibhotels.lk / admin123")
-            print("   Staff: staff1.colombo@serendibhotels.lk / staff123")
+            print("   Staff: staff@serendibhotels.lk / Test@1234")
             print("   Guest: john.doe@example.com / guest123")
             print("\n")
         except Exception as e:
