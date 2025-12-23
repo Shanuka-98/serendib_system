@@ -23,17 +23,46 @@ const CheckInOutPage = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true)
-      const response = await bookingAPI.getUpcoming(7)
-      let bookings = response.data.data?.bookings || []
       
-      const today = format(new Date(), 'yyyy-MM-dd')
-      if (filter === 'checkin') {
-        bookings = bookings.filter(b => format(new Date(b.check_in), 'yyyy-MM-dd') === today && b.status === 'confirmed')
+      // Fetch both confirmed (for check-in) and checked_in (for check-out) bookings
+      // unique list for 'all' view
+      const promises = [
+        bookingAPI.getBookings({ status: 'confirmed' }),
+        bookingAPI.getBookings({ status: 'checked_in' })
+      ]
+      
+      // If history is selected, fetch checked_out bookings too
+      if (filter === 'history') {
+        promises.push(bookingAPI.getBookings({ status: 'checked_out' }))
+      }
+
+      const responses = await Promise.all(promises)
+      const confirmed = responses[0].data.data?.bookings || []
+      const checkedIn = responses[1].data.data?.bookings || []
+      const checkedOut = filter === 'history' ? (responses[2]?.data.data?.bookings || []) : []
+
+      let results = []
+      if (filter === 'all') {
+        results = [...confirmed, ...checkedIn]
+      } else if (filter === 'checkin') {
+        results = confirmed
       } else if (filter === 'checkout') {
-        bookings = bookings.filter(b => format(new Date(b.check_out), 'yyyy-MM-dd') === today && b.status === 'checked_in')
+        results = checkedIn
+      } else if (filter === 'history') {
+        results = checkedOut
       }
       
-      setBookings(bookings)
+      // Sort: History (newest first), Others (oldest first/chronological)
+      results.sort((a, b) => {
+        if (filter === 'history') {
+           return new Date(b.check_out_date) - new Date(a.check_out_date)
+        }
+        const dateA = new Date(a.status === 'confirmed' ? a.check_in_date : a.check_out_date)
+        const dateB = new Date(b.status === 'confirmed' ? b.check_in_date : b.check_out_date)
+        return dateA - dateB
+      })
+
+      setBookings(results)
     } catch (error) {
       console.error('Error fetching bookings:', error)
       toast.error('Failed to load bookings')
@@ -136,20 +165,32 @@ const CheckInOutPage = () => {
             </div>
             
             {/* Filter Tabs */}
-            <div className="flex p-1 bg-gray-100 rounded-xl w-full md:w-auto">
-              {['all', 'checkin', 'checkout'].map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-medium transition-all ${
-                    filter === f
-                      ? 'bg-white text-primary-600 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  {f === 'checkin' ? 'Check-in' : f === 'checkout' ? 'Check-out' : 'All'}
-                </button>
-              ))}
+            <div className="flex gap-4 w-full md:w-auto">
+              <div className="flex p-1 bg-gray-100 rounded-xl flex-1 md:flex-none">
+                {['all', 'checkin', 'checkout'].map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-medium transition-all ${
+                      filter === f
+                        ? 'bg-white text-primary-600 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {f === 'checkin' ? 'Check-in' : f === 'checkout' ? 'Check-out' : 'All'}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setFilter('history')}
+                className={`px-6 py-2 rounded-xl text-sm font-medium transition-all border ${
+                  filter === 'history'
+                    ? 'bg-primary-50 border-primary-200 text-primary-700'
+                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                History
+              </button>
             </div>
           </div>
         </div>
@@ -175,8 +216,9 @@ const CheckInOutPage = () => {
         ) : (
           <div className="space-y-4">
             {filteredBookings.map((booking, index) => {
-              const isCheckIn = format(new Date(booking.check_in), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
-              const isCheckOut = format(new Date(booking.check_out), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
+              // Allow action if status matches, regardless of date (handle late checkins etc)
+              const isCheckIn = booking.status === 'confirmed'
+              const isCheckOut = booking.status === 'checked_in'
               const hasPhoto = photos[booking.booking_id]
               
               return (
@@ -220,15 +262,17 @@ const CheckInOutPage = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center flex-wrap gap-3 mb-2">
                         <h3 className="text-xl font-display font-bold text-gray-800">
-                          Room {booking.room?.room_number}
+                          {booking.room?.room_number ? `Room ${booking.room.room_number}` : 'Unassigned'}
                         </h3>
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                           booking.status === 'confirmed' ? 'bg-primary-100 text-primary-700' :
                           booking.status === 'checked_in' ? 'bg-mint-100 text-mint-700' :
+                          booking.status === 'checked_out' ? 'bg-gray-100 text-gray-600' :
                           'bg-gray-100 text-gray-700'
                         }`}>
                           {booking.status === 'confirmed' ? 'Confirmed' : 
-                           booking.status === 'checked_in' ? 'Checked In' : booking.status}
+                           booking.status === 'checked_in' ? 'Checked In' : 
+                           booking.status === 'checked_out' ? 'Checked Out' : booking.status}
                         </span>
                         <span className="text-xs text-gray-400 font-mono">
                           #{booking.booking_id}
@@ -239,19 +283,37 @@ const CheckInOutPage = () => {
                         <div className="flex items-center">
                           <User className="h-4 w-4 mr-2 text-primary-400" />
                           <span className="truncate" title={booking.user?.full_name}>
-                            {booking.user?.full_name}
+                            {booking.user?.full_name || 'Guest'}
                           </span>
                         </div>
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-2 text-primary-400" />
-                          <span>
-                            {format(new Date(booking.check_in), 'MMM dd')} - {format(new Date(booking.check_out), 'MMM dd')}
-                          </span>
-                        </div>
+                        {booking.status === 'checked_out' ? (
+                          <>
+                             <div className="flex items-center" title="Checked Out At">
+                              <Clock className="h-4 w-4 mr-2 text-gray-400" />
+                              <span>
+                                {booking.checked_out_at ? format(new Date(booking.checked_out_at), 'MMM dd, HH:mm') : 'N/A'}
+                              </span>
+                            </div>
+                            <div className="flex items-center">
+                              <span className="font-medium text-gray-900">
+                                ${parseFloat(booking.total_amount).toFixed(2)}
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex items-center">
+                            <Calendar className="h-4 w-4 mr-2 text-primary-400" />
+                            <span>
+                              {booking.check_in_date && booking.check_out_date ? 
+                                `${format(new Date(booking.check_in_date), 'MMM dd')} - ${format(new Date(booking.check_out_date), 'MMM dd')}` : 'Dates N/A'}
+                            </span>
+                          </div>
+                        )}
+                        
                         <div className="flex items-center">
                           <MapPin className="h-4 w-4 mr-2 text-primary-400" />
                           <span className="truncate">
-                            {booking.room?.branch?.name}
+                            {booking.room?.branch?.name || booking.branch?.name || 'N/A'}
                           </span>
                         </div>
                         <div className="flex items-center">
