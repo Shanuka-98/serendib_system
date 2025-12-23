@@ -242,7 +242,7 @@ const ServiceManagementPage = () => {
                   <div>
                     <span className="text-gray-500">Room:</span>
                     <span className="ml-2 font-medium text-gray-800">
-                      {selectedRequest.booking?.room?.room_number || 'N/A'}
+                      {selectedRequest.guest_room || 'N/A'}
                     </span>
                   </div>
                   <div>
@@ -282,10 +282,10 @@ const ServiceManagementPage = () => {
                 </h4>
                 <div className="bg-gray-50 p-4 rounded-xl text-sm">
                   <p className="font-medium text-gray-800">
-                    {selectedRequest.booking?.user?.full_name || 'N/A'}
+                    {selectedRequest.guest_name || 'N/A'}
                   </p>
                   <p className="text-gray-500">
-                    {selectedRequest.booking?.user?.email || 'N/A'}
+                    {selectedRequest.guest_email || 'N/A'}
                   </p>
                 </div>
               </div>

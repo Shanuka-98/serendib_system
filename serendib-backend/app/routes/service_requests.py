@@ -49,16 +49,18 @@ def get_service_requests():
         if not current_user.branch_id:
             return error_response('Staff member not assigned to a branch', status_code=400)
         
-        # Get pending requests for the branch or assigned to the staff
-        if status == 'in_progress':
-            requests = ServiceRequest.get_staff_requests(current_user.user_id)
-        else:
-            requests = ServiceRequest.get_pending_requests(current_user.branch_id)
+        # Query all requests for the branch
+        query = ServiceRequest.query.join(Booking).filter(Booking.branch_id == current_user.branch_id)
+        
+        if status:
+            query = query.filter(ServiceRequest.status == status)
+        if service_type:
+            query = query.filter(ServiceRequest.service_type == service_type)
             
-            if status:
-                requests = [r for r in requests if r.status == status]
-            if service_type:
-                requests = [r for r in requests if r.service_type == service_type]
+        requests = query.order_by(
+            ServiceRequest.priority.desc(),
+            ServiceRequest.requested_at.desc()
+        ).all()
                 
     else:  # admin
         # Admins see all requests or filtered by branch

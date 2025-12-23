@@ -65,6 +65,8 @@ class ServiceRequest(db.Model):
         if include_relations:
             if self.user:
                 data['guest_name'] = self.user.full_name
+                data['guest_email'] = self.user.email
+                data['guest_phone'] = self.user.phone
                 data['guest_room'] = self.booking.room.room_number if self.booking and self.booking.room else None
             
             if self.assigned_staff:

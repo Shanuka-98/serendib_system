@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Clock, CheckCircle, XCircle, AlertCircle, Filter } from 'lucide-react'
-import { serviceRequestAPI } from '../../services/api'
+import { Plus, Clock, CheckCircle, XCircle, AlertCircle, Filter, Bed } from 'lucide-react'
+import { serviceRequestAPI, bookingAPI } from '../../services/api'
 import { format } from 'date-fns'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
@@ -9,37 +9,45 @@ import { toast } from 'react-toastify'
 const ServiceRequestsPage = () => {
   const { user } = useAuth()
   const [requests, setRequests] = useState([])
+  const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({
+    booking_id: '',
     service_type: 'room_service',
     description: '',
     priority: 'medium'
   })
 
   useEffect(() => {
-    fetchRequests()
+    fetchData()
   }, [])
 
-  const fetchRequests = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true)
-      const response = await serviceRequestAPI.getRequests()
       
-      // API returns: { success: true, data: { service_requests: [...], count: ... } }
-      const apiResponse = response.data
+      // Fetch requests
+      const requestsRes = await serviceRequestAPI.getRequests()
+      const apiResponse = requestsRes.data
       const requestsData = apiResponse?.data?.service_requests || apiResponse?.data || []
-      
-      // Ensure requests is always an array
       setRequests(Array.isArray(requestsData) ? requestsData : [])
+
+      // Fetch active bookings (confirmed or checked_in)
+      const bookingsRes = await bookingAPI.getBookings()
+      const allBookings = bookingsRes.data?.data?.bookings || []
+      
+      // Filter for active bookings
+      const bookingsData = allBookings.filter(b => ['confirmed', 'checked_in'].includes(b.status))
+      setBookings(bookingsData)
+      
+      // Select first booking by default if available
+      if (bookingsData.length > 0) {
+        setFormData(prev => ({ ...prev, booking_id: bookingsData[0].booking_id }))
+      }
     } catch (error) {
-      console.error('Error fetching requests:', error)
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data
-      })
-      toast.error('Failed to load service requests')
-      setRequests([]) // Set to empty array on error
+      console.error('Error fetching data:', error)
+      toast.error('Failed to load service data')
     } finally {
       setLoading(false)
     }
@@ -47,12 +55,23 @@ const ServiceRequestsPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    if (!formData.booking_id) {
+      toast.error('Please select a valid booking/room')
+      return
+    }
+
     try {
       await serviceRequestAPI.createRequest(formData)
       toast.success('Service request submitted successfully')
       setShowForm(false)
-      setFormData({ service_type: 'room_service', description: '', priority: 'medium' })
-      fetchRequests()
+      setFormData({ 
+        booking_id: bookings.length > 0 ? bookings[0].booking_id : '',
+        service_type: 'room_service', 
+        description: '', 
+        priority: 'medium' 
+      })
+      fetchData() // Refresh list
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to submit request')
     }
@@ -86,13 +105,33 @@ const ServiceRequestsPage = () => {
             <p className="text-gray-600">Request hotel services and assistance</p>
           </div>
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              if (bookings.length === 0) {
+                toast.info('You need an active booking to make requests')
+                return
+              }
+              setShowForm(!showForm)
+            }}
             className="btn btn-primary"
+            disabled={bookings.length === 0}
           >
             <Plus className="h-5 w-5 mr-2" />
             New Request
           </button>
         </div>
+
+        {/* No Bookings Warning */}
+        {bookings.length === 0 && !loading && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+            <div>
+              <p className="font-medium text-amber-800">No Active Bookings</p>
+              <p className="text-sm text-amber-700">
+                You must have a confirmed or checked-in booking to request services.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Request Form */}
         {showForm && (
@@ -105,6 +144,27 @@ const ServiceRequestsPage = () => {
               Submit Service Request
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Room / Booking
+                </label>
+                <div className="relative">
+                  <select
+                    value={formData.booking_id}
+                    onChange={(e) => setFormData({ ...formData, booking_id: e.target.value })}
+                    className="input pl-10"
+                    required
+                  >
+                    {bookings.map(booking => (
+                      <option key={booking.booking_id} value={booking.booking_id}>
+                        Room {booking.room?.room_number} - {booking.branch?.name}
+                      </option>
+                    ))}
+                  </select>
+                  <Bed className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Service Type

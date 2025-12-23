@@ -5,7 +5,7 @@ import {
   Menu, X, User, LogOut, Calendar, Bed,
   Settings, BarChart3, Users, Building2, FileText,
   CheckCircle, AlertCircle, Award, Search, ChevronDown, 
-  LayoutDashboard, Cog
+  LayoutDashboard, Cog, ConciergeBell
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
@@ -38,6 +38,7 @@ const Navbar = () => {
   // Guest Navigation
   const guestNavItems = [
     { path: '/rooms', label: 'Browse Rooms', icon: Search },
+    { path: '/service-requests', label: 'Services', icon: ConciergeBell },
     { path: '/my-bookings', label: 'My Bookings', icon: Calendar },
     { path: '/loyalty', label: 'Rewards', icon: Award },
     { path: '/profile', label: 'Profile', icon: User },
