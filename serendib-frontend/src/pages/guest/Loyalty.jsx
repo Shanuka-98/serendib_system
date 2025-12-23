@@ -19,10 +19,14 @@ const LoyaltyPage = () => {
     try {
       setLoading(true)
       const response = await loyaltyAPI.getProfile()
-      setLoyalty(response.data.data)
+      // API returns { data: { loyalty: {...} } }
+      setLoyalty(response.data.data.loyalty)
     } catch (error) {
       console.error('Error fetching loyalty:', error)
-      toast.error('Failed to load loyalty profile')
+      // Don't show error toast if 404 (no loyalty profile yet)
+      if (error.response?.status !== 404) {
+        toast.error('Failed to load loyalty profile')
+      }
     } finally {
       setLoading(false)
     }
