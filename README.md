@@ -1,6 +1,6 @@
 # Serendib Smart Hotel Management System - Complete Project Documentation
 
-**Last Updated:** December 20, 2025  
+**Last Updated:** December 23, 2025  
 **Overall Progress:** **98% Complete** - All Core Features Fully Functional & Polished
 
 > **Note:** This is the comprehensive project documentation. All project status, information, and recent updates are consolidated here.
@@ -95,7 +95,25 @@
 
 ---
 
-## Recent Fixes & Improvements (December 19-20, 2024)
+## Recent Fixes & Improvements (December 23, 2024)
+
+### 🌟 New Features
+1.  **Staff Check-In/Out History**:
+    -   Added a dedicated **"History"** tab to view past guest stays.
+    -   Displays detailed Check-Out timestamps and Total Amount paid for completed stays.
+    -   Improved logic to allow handling check-ins/outs regardless of strict date matching (handling late arrivals).
+
+### 🐛 Bug Fixes & Polish
+1.  **Service Request Flow**:
+    -   Fixed "N/A" data in Staff Service Modal (Guest Name, Email, Room Number now correctly linked).
+    -   Ensured Staff can view ALL requests (including Completed) for their branch.
+    -   Validated the end-to-end flow from Guest Creation to Staff Fulfillment.
+2.  **Date Handling**:
+    -   Fixed `Invalid time value` crashes in the Staff dashboard.
+
+---
+
+## Previous Updates (December 19-20, 2024)
 
 ### 🐛 Bug Fixes
 1.  **Staff Routes**: Verified and fixed navigation links in Navbar and Dashboard.
@@ -180,4 +198,45 @@
 -   **State Management**: React `useState` + `useEffect` for local state; Context API for Auth.
 -   **Styling**: Tailwind CSS with custom config (`tailwind.config.js`).
 
+---
 
+## Technical Stack & Implementation Documentation
+
+### 1. Programming Languages
+*   **Python (v3.12+)**: Backend logic, API development.
+*   **JavaScript (ES6+)**: Frontend interface logic.
+*   **SQL**: Database management.
+*   **HTML5 & CSS3**: Structure and styling.
+
+### 2. Database
+*   **MySQL**: Relational database for all system data.
+
+### 3. Development Tools
+*   **VS Code**: Primary IDE.
+
+### 4. Frameworks & Libraries
+
+#### Backend (Python/Flask)
+| Library | Purpose |
+| :--- | :--- |
+| **Flask** (3.0.0) | Core web framework. |
+| **Flask-SQLAlchemy** (3.1.1) | ORM for database interactions. |
+| **Flask-JWT-Extended** (4.5.3) | Authentication & Security. |
+| **Flask-CORS** (4.0.0) | Cross-Origin Resource Sharing. |
+| **Flask-Bcrypt** (1.0.1) | Password hashing. |
+| **PyMySQL** (1.1.0) | MySQL client. |
+| **Flask-Migrate** (4.0.5) | Database migrations. |
+
+#### Frontend (React/Vite)
+| Library | Purpose |
+| :--- | :--- |
+| **React** (18.2.0) | UI Library. |
+| **Vite** (5.0.8) | Build tool & Dev server. |
+| **TailwindCSS** (3.3.6) | Utility-first CSS framework. |
+| **React Router DOM** (6.20.0) | Client-side routing. |
+| **Framer Motion** (10.18.0) | Animations. |
+| **Axios** (1.6.2) | HTTP Client. |
+| **Zustand** (4.4.7) | State Management. |
+| **Lucide React** (0.294.0) | Icons. |
+| **Date-fns** (3.0.0) | Date manipulation. |
+| **Recharts** (2.10.3) | Data visualization. |
