@@ -100,6 +100,16 @@ export const roomAPI = {
   deleteRoom: (id) => api.delete(`/rooms/${id}`),
   checkAvailability: (params) => api.get('/rooms/availability', { params }),
   getRoomTypes: (branchId) => api.get('/rooms/types', { params: { branch_id: branchId } }),
+  /** Upload image for a new room (before room is created) */
+  uploadImageNew: (formData) => api.post('/rooms/upload-image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  /** Upload image for an existing room (admin only) */
+  uploadImage: (roomId, formData) => api.post(`/rooms/${roomId}/upload-image`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  /** Delete an image from a room (admin only) */
+  deleteImage: (roomId, imageUrl) => api.delete(`/rooms/${roomId}/delete-image`, { params: { image_url: imageUrl } }),
 }
 
 // Booking API - create reservations, handle check-in and check-out

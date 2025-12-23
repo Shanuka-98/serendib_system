@@ -451,3 +451,209 @@ def get_room_types():
     
     return success_response(data={'room_types': room_types})
 
+
+@rooms_bp.route('/upload-image', methods=['POST'])
+@jwt_required()
+@admin_required
+def upload_room_image_without_room():
+    """
+    Upload image for a room (can be used before room creation)
+    Returns the image URL to include when creating/updating the room.
+    
+    Request Body (multipart/form-data):
+        image: Image file (JPEG, PNG, GIF, WebP)
+    """
+    import os
+    import uuid
+    from flask import current_app
+    from werkzeug.utils import secure_filename
+    
+    if 'image' not in request.files:
+        return error_response('No image file provided', status_code=400)
+    
+    file = request.files['image']
+    
+    if file.filename == '':
+        return error_response('No selected file', status_code=400)
+    
+    # Check allowed extensions
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    
+    def allowed_file(filename):
+        return '.' in filename and \
+               filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    
+    if not allowed_file(file.filename):
+        return error_response('Invalid file type. Allowed: PNG, JPG, JPEG, GIF, WebP', status_code=400)
+    
+    # Create room images directory if it doesn't exist
+    # Save to frontend public folder for direct access
+    frontend_images_dir = os.path.join(
+        os.path.dirname(current_app.root_path),
+        '..', 'serendib-frontend', 'public', 'images', 'rooms'
+    )
+    os.makedirs(frontend_images_dir, exist_ok=True)
+    
+    # Generate unique filename
+    file_ext = file.filename.rsplit('.', 1)[1].lower()
+    filename = f"room-new-{uuid.uuid4().hex[:8]}.{file_ext}"
+    file_path = os.path.join(frontend_images_dir, filename)
+    
+    try:
+        file.save(file_path)
+        new_image_url = f'/images/rooms/{filename}'
+        
+        return success_response(
+            data={'image_url': new_image_url},
+            message='Image uploaded successfully'
+        )
+        
+    except Exception as e:
+        return error_response(f'Failed to upload image: {str(e)}', status_code=500)
+
+
+@rooms_bp.route('/<int:room_id>/upload-image', methods=['POST'])
+@jwt_required()
+@admin_required
+def upload_room_image(room_id):
+    """
+    Upload image for a room
+    
+    Request Body (multipart/form-data):
+        image: Image file (JPEG, PNG, GIF, WebP)
+    """
+    import os
+    from flask import current_app
+    from werkzeug.utils import secure_filename
+    
+    room = Room.query.get_or_404(room_id)
+    
+    if 'image' not in request.files:
+        return error_response('No image file provided', status_code=400)
+    
+    file = request.files['image']
+    
+    if file.filename == '':
+        return error_response('No selected file', status_code=400)
+    
+    # Check allowed extensions
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    
+    def allowed_file(filename):
+        return '.' in filename and \
+               filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    
+    if not allowed_file(file.filename):
+        return error_response('Invalid file type. Allowed: PNG, JPG, JPEG, GIF, WebP', status_code=400)
+    
+    # Create room images directory if it doesn't exist
+    # Save to frontend public folder for direct access
+    frontend_images_dir = os.path.join(
+        os.path.dirname(current_app.root_path),
+        '..', 'serendib-frontend', 'public', 'images', 'rooms'
+    )
+    os.makedirs(frontend_images_dir, exist_ok=True)
+    
+    # Generate unique filename
+    import uuid
+    file_ext = file.filename.rsplit('.', 1)[1].lower()
+    filename = f"room-{room_id}-{uuid.uuid4().hex[:8]}.{file_ext}"
+    file_path = os.path.join(frontend_images_dir, filename)
+    
+    try:
+        file.save(file_path)
+        
+        # Update room image_urls
+        import json
+        current_images = room.image_urls
+        if isinstance(current_images, str):
+            try:
+                current_images = json.loads(current_images)
+            except:
+                current_images = []
+        elif current_images is None:
+            current_images = []
+        
+        # Add new image URL
+        new_image_url = f'/images/rooms/{filename}'
+        if new_image_url not in current_images:
+            current_images.append(new_image_url)
+        
+        room.image_urls = json.dumps(current_images)
+        db.session.commit()
+        
+        # Log the action
+        current_user = get_current_user()
+        AuditLog.log_action(
+            user_id=current_user.user_id,
+            action='room_image_upload',
+            table_name='Room',
+            record_id=room_id,
+            new_values={'image_url': new_image_url}
+        )
+        
+        return success_response(
+            data={'image_url': new_image_url, 'all_images': current_images},
+            message='Image uploaded successfully'
+        )
+        
+    except Exception as e:
+        return error_response(f'Failed to upload image: {str(e)}', status_code=500)
+
+
+@rooms_bp.route('/<int:room_id>/delete-image', methods=['DELETE'])
+@jwt_required()
+@admin_required
+def delete_room_image(room_id):
+    """
+    Delete an image from a room
+    
+    Query Parameters:
+        image_url: URL of the image to delete
+    """
+    import os
+    import json
+    from flask import current_app
+    
+    room = Room.query.get_or_404(room_id)
+    
+    image_url = request.args.get('image_url')
+    if not image_url:
+        return error_response('Image URL required', status_code=400)
+    
+    # Parse current images
+    current_images = room.image_urls
+    if isinstance(current_images, str):
+        try:
+            current_images = json.loads(current_images)
+        except:
+            current_images = []
+    elif current_images is None:
+        current_images = []
+    
+    if image_url not in current_images:
+        return error_response('Image not found', status_code=404)
+    
+    # Remove from list
+    current_images.remove(image_url)
+    room.image_urls = json.dumps(current_images)
+    
+    # Try to delete the file
+    try:
+        frontend_images_dir = os.path.join(
+            os.path.dirname(current_app.root_path),
+            '..', 'serendib-frontend', 'public'
+        )
+        file_path = os.path.join(frontend_images_dir, image_url.lstrip('/'))
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    except Exception as e:
+        print(f"Could not delete file: {e}")
+    
+    db.session.commit()
+    
+    return success_response(
+        data={'all_images': current_images},
+        message='Image deleted successfully'
+    )
+

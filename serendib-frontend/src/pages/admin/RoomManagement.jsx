@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { roomAPI, adminAPI } from '../../services/api'
 import { toast } from 'react-toastify'
+import { ConfirmModal } from '../../components/Modal'
 
 const RoomManagement = () => {
   const [rooms, setRooms] = useState([])
@@ -19,6 +20,8 @@ const RoomManagement = () => {
     search: ''
   })
   const [branches, setBranches] = useState([])
+  const [deleteConfirm, setDeleteConfirm] = useState({ show: false, roomId: null, roomNumber: '' })
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     fetchBranches()
@@ -118,15 +121,23 @@ const RoomManagement = () => {
     }
   }
 
-  const handleDelete = async (roomId) => {
-    if (!window.confirm('Are you sure you want to delete this room?')) return
+  const handleDeleteClick = (room) => {
+    setDeleteConfirm({ show: true, roomId: room.room_id, roomNumber: room.room_number })
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm.roomId) return
     
+    setDeleting(true)
     try {
-      await roomAPI.deleteRoom(roomId)
+      await roomAPI.deleteRoom(deleteConfirm.roomId)
       toast.success('Room deleted successfully')
+      setDeleteConfirm({ show: false, roomId: null, roomNumber: '' })
       fetchRooms()
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete room')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -367,7 +378,7 @@ const RoomManagement = () => {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDelete(room.room_id)}
+                      onClick={() => handleDeleteClick(room)}
                       className="btn btn-secondary text-red-600 hover:bg-red-50"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -391,6 +402,18 @@ const RoomManagement = () => {
             onSave={handleSave}
           />
         )}
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmModal
+          isOpen={deleteConfirm.show}
+          onClose={() => setDeleteConfirm({ show: false, roomId: null, roomNumber: '' })}
+          onConfirm={handleDeleteConfirm}
+          title="Delete Room"
+          message={`Are you sure you want to delete Room ${deleteConfirm.roomNumber}? This action cannot be undone.`}
+          confirmText="Delete Room"
+          variant="danger"
+          loading={deleting}
+        />
       </div>
     </div>
   )
@@ -410,6 +433,10 @@ const RoomEditModal = ({ room, branches, onClose, onSave }) => {
     amenities: Array.isArray(room?.amenities) ? room.amenities.join(', ') : (room?.amenities || '')
   })
   const [loading, setLoading] = useState(false)
+  const [images, setImages] = useState(
+    Array.isArray(room?.image_urls) ? room.image_urls : []
+  )
+  const [uploading, setUploading] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -421,7 +448,8 @@ const RoomEditModal = ({ room, branches, onClose, onSave }) => {
         capacity: parseInt(formData.capacity),
         price_per_night: parseFloat(formData.price_per_night),
         floor: parseInt(formData.floor),
-        amenities: formData.amenities.split(',').map(a => a.trim()).filter(a => a)
+        amenities: formData.amenities.split(',').map(a => a.trim()).filter(a => a),
+        image_urls: images // Include uploaded images
       }
       console.log('Submitting room data:', submitData)
       await onSave(submitData)
@@ -430,12 +458,59 @@ const RoomEditModal = ({ room, branches, onClose, onSave }) => {
     }
   }
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const formDataUpload = new FormData()
+    formDataUpload.append('image', file)
+
+    setUploading(true)
+    try {
+      let response
+      if (room?.room_id) {
+        // Existing room - use room-specific endpoint
+        response = await roomAPI.uploadImage(room.room_id, formDataUpload)
+        setImages(response.data.data.all_images)
+      } else {
+        // New room - use general upload endpoint
+        response = await roomAPI.uploadImageNew(formDataUpload)
+        setImages(prev => [...prev, response.data.data.image_url])
+      }
+      toast.success('Image uploaded successfully!')
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to upload image')
+    } finally {
+      setUploading(false)
+      e.target.value = '' // Reset file input
+    }
+  }
+
+  const handleDeleteImage = async (imageUrl) => {
+    if (!window.confirm('Delete this image?')) return
+
+    if (room?.room_id) {
+      // For existing rooms, call delete API
+      try {
+        const response = await roomAPI.deleteImage(room.room_id, imageUrl)
+        setImages(response.data.data.all_images)
+        toast.success('Image deleted')
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Failed to delete image')
+      }
+    } else {
+      // For new rooms, just remove from local state
+      setImages(prev => prev.filter(img => img !== imageUrl))
+      toast.success('Image removed')
+    }
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="glass rounded-2xl p-6 max-w-2xl w-full my-8"
+        className="glass rounded-2xl p-6 max-w-2xl w-full my-8 max-h-[90vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-display font-bold text-gray-800">
@@ -587,6 +662,54 @@ const RoomEditModal = ({ room, branches, onClose, onSave }) => {
               className="input"
               placeholder="WiFi, TV, Air Conditioning, Mini Bar"
             />
+          </div>
+
+          {/* Image Upload Section */}
+          <div className="border-t border-gray-200 pt-4 mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Room Images
+            </label>
+            
+            {/* Current Images */}
+            {images.length > 0 && (
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                {images.map((imageUrl, idx) => (
+                  <div key={idx} className="relative group">
+                    <img
+                      src={imageUrl}
+                      alt={`Room ${idx + 1}`}
+                      className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteImage(imageUrl)}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Upload Button - works for both new and existing rooms */}
+            <label className={`flex items-center justify-center border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors ${uploading ? 'bg-gray-100 border-gray-300' : 'border-primary-300 hover:border-primary-500 hover:bg-primary-50'}`}>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                disabled={uploading}
+              />
+              {uploading ? (
+                <span className="text-gray-500">Uploading...</span>
+              ) : (
+                <>
+                  <Plus className="h-5 w-5 text-primary-500 mr-2" />
+                  <span className="text-primary-600 font-medium">Add Image</span>
+                </>
+              )}
+            </label>
           </div>
 
           <div className="flex gap-2 pt-4">

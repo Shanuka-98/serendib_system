@@ -16,6 +16,7 @@ export function Modal({
   showClose = true,
   className = '',
   headerIcon: HeaderIcon = null,
+  align = 'center',
 }) {
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -51,7 +52,9 @@ export function Modal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className={`fixed inset-0 z-50 flex justify-center p-4 ${
+          align === 'top' ? 'items-start pt-20' : 'items-center'
+        }`}>
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -126,7 +129,7 @@ export function ConfirmModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
+    <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm" align="top">
       <p className="text-gray-600 mb-6">{message}</p>
       <div className="flex gap-3">
         <button
