@@ -2,7 +2,7 @@
 
 Flask-based REST API for the Serendib Smart Hotel Management System.
 
-**Last Updated:** December 2024
+**Last Updated:** December 2025
 
 ## Quick Start
 
@@ -85,4 +85,4 @@ SMS_API_KEY=xxx
 
 ## License
 
-© 2024 Serendib Hotels
+© 2025 Serendib Hotels

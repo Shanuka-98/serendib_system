@@ -2,7 +2,7 @@
 
 MySQL database schema for the Serendib Smart Hotel Management System.
 
-**Last Updated:** December 2024
+**Last Updated:** December 2025
 
 ## Quick Setup
 
@@ -286,4 +286,4 @@ mysql -u root -p serendib_hotels < backup.sql
 
 ## License
 
-© 2024 Serendib Hotels
+© 2025 Serendib Hotels

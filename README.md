@@ -95,7 +95,7 @@
 
 ---
 
-## Recent Fixes & Improvements (December 23, 2024)
+## Recent Fixes & Improvements (December 23, 2025)
 
 ### 🌟 New Features
 1.  **Staff Check-In/Out History**:
@@ -113,7 +113,7 @@
 
 ---
 
-## Previous Updates (December 19-20, 2024)
+## Previous Updates (December 19-20, 2025)
 
 ### 🐛 Bug Fixes
 1.  **Staff Routes**: Verified and fixed navigation links in Navbar and Dashboard.

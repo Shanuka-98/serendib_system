@@ -2,7 +2,7 @@
 
 Modern React frontend for the Serendib Smart Hotel Management System.
 
-**Last Updated:** December 2024
+**Last Updated:** December 2025
 
 ## Quick Start
 
@@ -87,7 +87,7 @@ src/
 
 ## Features
 
-### Recent Additions (Dec 2024)
+### Recent Additions (Dec 2025)
 - ✅ User CRUD (Create/Edit/Delete)
 - ✅ Branch Management with Edit modal
 - ✅ Staff Dashboard Quick Actions
@@ -100,4 +100,4 @@ src/
 
 ## License
 
-© 2024 Serendib Hotels
+© 2025 Serendib Hotels

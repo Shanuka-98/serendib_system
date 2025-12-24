@@ -21,6 +21,10 @@ import LoyaltyPage from './pages/guest/Loyalty'
 import ProfilePage from './pages/guest/Profile'
 import BookingSuccess from './pages/guest/BookingSuccess'
 import BookingCancel from './pages/guest/BookingCancel'
+import AboutPage from './pages/guest/About'
+import ContactPage from './pages/guest/Contact'
+import CareersPage from './pages/guest/Careers'
+import PrivacyPage from './pages/guest/Privacy'
 
 // Staff Pages
 import StaffDashboard from './pages/staff/Dashboard'
@@ -48,6 +52,10 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/careers" element={<CareersPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           
           {/* Guest Routes */}
           <Route path="/rooms" element={<RoomSearchPage />} />
