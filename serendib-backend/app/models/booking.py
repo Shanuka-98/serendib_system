@@ -118,22 +118,26 @@ class Booking(db.Model):
             'total': total
         }
     
-    def can_cancel(self):
+    def can_cancel(self, ignore_policy=False):
         """Check if booking can be cancelled"""
         if self.status in ['cancelled', 'checked_out']:
             return False, "Booking already cancelled or completed"
         
-        # Check cancellation policy (24 hours before check-in)
-        hours_until_checkin = (datetime.combine(self.check_in_date, datetime.min.time()) - datetime.utcnow()).total_seconds() / 3600
+        if ignore_policy:
+            return True, "Booking can be cancelled (Policy Overridden)"
         
-        if hours_until_checkin < 24:
-            return False, "Cancellation period has expired (must cancel 24 hours before check-in)"
+        # Check cancellation policy (24 hours before check-in)
+        if self.check_in_date:
+            hours_until_checkin = (datetime.combine(self.check_in_date, datetime.min.time()) - datetime.utcnow()).total_seconds() / 3600
+            
+            if hours_until_checkin < 24:
+                return False, "Cancellation period has expired (must cancel 24 hours before check-in)"
         
         return True, "Booking can be cancelled"
     
-    def cancel(self, reason=None):
+    def cancel(self, reason=None, ignore_policy=False):
         """Cancel booking"""
-        can_cancel, message = self.can_cancel()
+        can_cancel, message = self.can_cancel(ignore_policy=ignore_policy)
         
         if not can_cancel:
             return False, message
@@ -142,8 +146,8 @@ class Booking(db.Model):
         self.cancellation_reason = reason
         self.cancelled_at = datetime.utcnow()
         
-        # Update room status
-        if self.room.status == 'reserved':
+        # Update room status (make available if it was reserved or occupied)
+        if self.room and self.room.status in ['reserved', 'occupied']:
             self.room.status = 'available'
         
         db.session.commit()

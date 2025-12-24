@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Award, Star, Gift, TrendingUp, Sparkles, Crown } from 'lucide-react'
+import { Award, Star, Gift, TrendingUp, Sparkles, Crown, Clock, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
 import { loyaltyAPI } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
+import { formatBookingRef } from '../../utils/helpers'
 
 const LoyaltyPage = () => {
   const { user } = useAuth()
@@ -11,9 +12,26 @@ const LoyaltyPage = () => {
   const [loading, setLoading] = useState(true)
   const [redeemPoints, setRedeemPoints] = useState('')
 
+  const [history, setHistory] = useState([])
+  const [historyLoading, setHistoryLoading] = useState(true)
+
   useEffect(() => {
     fetchLoyaltyProfile()
+    fetchLoyaltyHistory()
   }, [])
+
+  const fetchLoyaltyHistory = async () => {
+    try {
+      setHistoryLoading(true)
+      const response = await loyaltyAPI.getHistory()
+      // API returns { data: { history: [...], count: ... } }
+      setHistory(response.data.data.history || [])
+    } catch (error) {
+      console.error('Error fetching history:', error)
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
 
   const fetchLoyaltyProfile = async () => {
     try {
@@ -191,6 +209,9 @@ const LoyaltyPage = () => {
               <p className="text-xs text-gray-500 mt-1">
                 100 points = 100 LKR discount • Available: {loyalty.points} points
               </p>
+              <p className="text-xs text-primary-600 mt-2 font-medium bg-primary-50 inline-block px-2 py-1 rounded">
+                💡 Tip: You can also redeem points directly during booking for instant savings!
+              </p>
             </div>
             <button
               type="submit"
@@ -246,6 +267,77 @@ const LoyaltyPage = () => {
                 </div>
               )
             })}
+          </div>
+        </motion.div>
+
+        {/* Points History */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="glass rounded-2xl p-6 mt-6"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <Clock className="h-6 w-6 text-gray-400" />
+            <h3 className="text-2xl font-display font-bold text-gray-800">
+              Points History
+            </h3>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100 text-left">
+                  <th className="pb-4 font-semibold text-gray-600">Activity</th>
+                  <th className="pb-4 font-semibold text-gray-600">Date</th>
+                  <th className="pb-4 font-semibold text-gray-600 text-right">Points</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {historyLoading ? (
+                  <tr>
+                    <td colSpan="3" className="py-8 text-center text-gray-500">Loading history...</td>
+                  </tr>
+                ) : history.length === 0 ? (
+                  <tr>
+                    <td colSpan="3" className="py-8 text-center text-gray-500">No points history yet</td>
+                  </tr>
+                ) : (
+                  history.map((item, idx) => (
+                    <tr key={item.id || idx} className="group hover:bg-gray-50/50 transition-colors">
+                      <td className="py-4 pr-4">
+                        <div className="flex items-start gap-3">
+                          <div className={`p-2 rounded-lg ${
+                            item.type === 'earned' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                          }`}>
+                            {item.type === 'earned' ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownLeft className="h-4 w-4" />}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-800">
+                              {item.related_booking_id 
+                                ? item.description.replace(
+                                    /booking #\d+/i, 
+                                    `booking ${formatBookingRef(item.related_booking_id, new Date(item.date).getFullYear())}`
+                                  )
+                                : item.description
+                              }
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 text-sm text-gray-500 whitespace-nowrap">
+                        {new Date(item.date).toLocaleDateString()}
+                      </td>
+                      <td className={`py-4 text-right font-bold whitespace-nowrap ${
+                        item.type === 'earned' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {item.type === 'earned' ? '+' : '-'}{item.points || '0'}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </motion.div>
       </div>

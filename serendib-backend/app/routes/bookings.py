@@ -3,7 +3,7 @@ Booking Management Routes
 Booking CRUD operations, check-in, check-out
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
 from app import db
@@ -154,13 +154,46 @@ def create_booking():
         return error_response(f'Number of guests exceeds room capacity ({room.capacity})', status_code=400)
     
     try:
-        # Calculate total amount
+        # Calculate base amount
         amount_details = calculate_booking_amount(
             room.price_per_night,
             check_in_date,
             check_out_date,
             room.branch.tax_rate
         )
+        
+        # Initialize discount tracking
+        loyalty_discount = 0
+        points_discount = 0
+        points_redeemed = 0
+        tier_discount_percent = 0
+        
+        # Apply loyalty tier discount if user has loyalty program
+        if current_user.role == 'guest' and current_user.loyalty_program:
+            tier_discount_percent = current_user.loyalty_program.get_discount_percentage()
+            if tier_discount_percent > 0:
+                loyalty_discount = float(amount_details['subtotal']) * (tier_discount_percent / 100)
+        
+        # Handle points redemption if requested
+        redeem_points = data.get('redeem_points', 0)
+        if redeem_points > 0 and current_user.loyalty_program:
+            if redeem_points <= current_user.loyalty_program.points:
+                # 100 points = 100 LKR discount
+                points_discount = float(redeem_points)
+                points_redeemed = redeem_points
+                # Deduct points from user
+                current_user.loyalty_program.points -= redeem_points
+            else:
+                return error_response('Insufficient loyalty points', status_code=400)
+        
+        # Calculate final total
+        discounted_subtotal = float(amount_details['subtotal']) - loyalty_discount - points_discount
+        if discounted_subtotal < 0:
+            discounted_subtotal = 0
+        
+        # Recalculate tax on discounted amount
+        tax_amount = discounted_subtotal * float(room.branch.tax_rate) / 100
+        final_total = discounted_subtotal + tax_amount
         
         # Create booking
         booking = Booking(
@@ -169,7 +202,7 @@ def create_booking():
             branch_id=room.branch_id,
             check_in_date=check_in_date,
             check_out_date=check_out_date,
-            total_amount=amount_details['total'],
+            total_amount=final_total,
             status='pending',
             number_of_guests=data['number_of_guests'],
             special_requests=data.get('special_requests')
@@ -186,6 +219,26 @@ def create_booking():
             related_id=booking.booking_id,
             action_url=f'/bookings/{booking.booking_id}'
         )
+
+        # Create loyalty notification if points were redeemed
+        if redeem_points > 0 and current_user.loyalty_program:
+            # Create history record manually to ensure atomicity with booking transaction
+            from app.models.loyalty_history import LoyaltyHistory
+            history = LoyaltyHistory(
+                loyalty_id=current_user.loyalty_program.loyalty_id,
+                amount=-points_redeemed,
+                transaction_type='redeemed',
+                description=f'Redeemed {points_redeemed} points on booking #{booking.booking_id}',
+                related_booking_id=booking.booking_id
+            )
+            db.session.add(history)
+
+            Notification.create_notification(
+                user_id=current_user.user_id,
+                message=f'You redeemed {points_redeemed} points for {points_discount:,.2f} LKR discount on booking #{booking.booking_id}.',
+                notification_type='loyalty',
+                related_id=booking.booking_id
+            )
         
         # Log action
         AuditLog.log_action(
@@ -200,10 +253,21 @@ def create_booking():
         
         db.session.commit()
         
+        # Include loyalty info in response
+        loyalty_info = {
+            'tier_discount_percent': tier_discount_percent,
+            'tier_discount_amount': loyalty_discount,
+            'points_redeemed': points_redeemed,
+            'points_discount': points_discount,
+            'original_total': float(amount_details['total']),
+            'final_total': final_total
+        }
+        
         return success_response(
             data={
                 'booking': booking.to_dict(include_relations=True),
-                'amount_details': amount_details
+                'amount_details': amount_details,
+                'loyalty_applied': loyalty_info
             },
             message='Booking created successfully. Please proceed with payment.',
             status_code=201
@@ -319,15 +383,50 @@ def cancel_booking(booking_id):
     reason = data.get('cancellation_reason', 'Cancelled by user')
     
     # Cancel booking
-    success, message = booking.cancel(reason)
+    is_staff = current_user.role in ['staff', 'admin']
+    success, message = booking.cancel(reason, ignore_policy=is_staff)
     
     if not success:
         return error_response(message, status_code=400)
     
+    # Process refund if payment was made via Stripe
+    refund_message = ""
+    payment = Payment.query.filter_by(
+        booking_id=booking.booking_id,
+        payment_status='completed'
+    ).first()
+    
+    if payment and payment.transaction_id and payment.payment_method in ['credit_card', 'debit_card']:
+        try:
+            import stripe
+            stripe.api_key = current_app.config.get('STRIPE_SECRET_KEY')
+            
+            # Create refund
+            refund = stripe.Refund.create(
+                payment_intent=payment.transaction_id,
+                reason='requested_by_customer'
+            )
+            
+            # Update payment status
+            payment.payment_status = 'refunded'
+            payment.refund_id = refund.id
+            db.session.commit()
+            
+            refund_message = " A full refund has been processed."
+        except Exception as e:
+            # Log error but don't fail the cancellation
+            print(f"Refund failed: {str(e)}")
+            refund_message = " Refund will be processed manually."
+    elif payment:
+        # Cash or other payment - mark for manual refund
+        payment.payment_status = 'refunded'
+        db.session.commit()
+        refund_message = " Please contact us for your refund."
+    
     # Create notification
     Notification.create_notification(
         user_id=booking.user_id,
-        message=f'Your booking #{booking.booking_id} has been cancelled.',
+        message=f'Your booking #{booking.booking_id} has been cancelled.{refund_message}',
         notification_type='booking',
         related_id=booking.booking_id
     )
@@ -344,7 +443,7 @@ def cancel_booking(booking_id):
         user_agent=request.headers.get('User-Agent')
     )
     
-    return success_response(message=message)
+    return success_response(message=message + refund_message)
 
 
 @bookings_bp.route('/<int:booking_id>/checkin', methods=['POST'])
@@ -448,6 +547,8 @@ def check_out(booking_id):
         ip_address=get_ip_address(),
         user_agent=request.headers.get('User-Agent')
     )
+    
+    db.session.commit()
     
     return success_response(
         data={'booking': booking.to_dict(include_relations=True)},

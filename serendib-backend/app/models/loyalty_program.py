@@ -76,16 +76,27 @@ class LoyaltyProgram(db.Model):
         # Update tier
         self.update_tier()
         
+        # Create history record
+        from app.models.loyalty_history import LoyaltyHistory
+        history = LoyaltyHistory(
+            loyalty_id=self.loyalty_id,
+            amount=points_earned,
+            transaction_type='earned',
+            description=f'Earned {points_earned} points'
+        )
+        db.session.add(history)
+        
         db.session.commit()
         
         return points_earned
     
-    def redeem_points(self, points_to_redeem):
+    def redeem_points(self, points_to_redeem, booking_id=None):
         """
         Redeem loyalty points
         
         Args:
             points_to_redeem: Number of points to redeem
+            booking_id: Optional booking ID for history
         
         Returns:
             tuple: (success, message, discount_amount)
@@ -98,6 +109,17 @@ class LoyaltyProgram(db.Model):
         
         self.points -= points_to_redeem
         self.last_activity = datetime.utcnow()
+        
+        # Create history record
+        from app.models.loyalty_history import LoyaltyHistory
+        history = LoyaltyHistory(
+            loyalty_id=self.loyalty_id,
+            amount=-points_to_redeem,
+            transaction_type='redeemed',
+            description=f'Redeemed {points_to_redeem} points',
+            related_booking_id=booking_id
+        )
+        db.session.add(history)
         
         db.session.commit()
         

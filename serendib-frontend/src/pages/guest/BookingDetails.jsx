@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Calendar, MapPin, Users, CreditCard, Clock,
   CheckCircle, XCircle, Download, ArrowLeft,
-  Bed, Wifi, Car, Coffee, Phone, Mail
+  Bed, Wifi, Car, Coffee, Phone, Mail, AlertTriangle, Gift
 } from 'lucide-react'
 import { bookingAPI } from '../../services/api'
 import { format, parseISO, differenceInDays } from 'date-fns'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
 import { formatBookingRef } from '../../utils/helpers'
+import CancelBookingModal from '../../components/modals/CancelBookingModal'
 
 const BookingDetailsPage = () => {
   const { id } = useParams()
@@ -18,6 +19,9 @@ const BookingDetailsPage = () => {
   const { user } = useAuth()
   const [booking, setBooking] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [cancelling, setCancelling] = useState(false)
 
   useEffect(() => {
     if (!user) {
@@ -57,16 +61,23 @@ const BookingDetailsPage = () => {
     }
   }
 
-  const handleCancel = async () => {
-    const reason = prompt('Please provide a cancellation reason:')
-    if (!reason) return
+  const handleCancel = async (reason = cancelReason) => {
+    if (!reason?.trim()) {
+      toast.error('Please provide a cancellation reason')
+      return
+    }
 
     try {
+      setCancelling(true)
       await bookingAPI.cancelBooking(id, reason)
       toast.success('Booking cancelled successfully')
+      setShowCancelModal(false)
+      setCancelReason('')
       fetchBookingDetails()
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to cancel booking')
+    } finally {
+      setCancelling(false)
     }
   }
 
@@ -123,9 +134,14 @@ const BookingDetailsPage = () => {
   }
   
   const nights = differenceInDays(parseISO(checkOutDate), parseISO(checkInDate))
+  
+  // Check if cancellation is allowed (24+ hours before check-in)
+  const hoursUntilCheckIn = (new Date(checkInDate) - new Date()) / (1000 * 60 * 60)
   const canCancel = booking.status !== 'cancelled' && 
                     booking.status !== 'completed' &&
-                    new Date(checkInDate) > new Date()
+                    booking.status !== 'checked_in' &&
+                    booking.status !== 'checked_out' &&
+                    hoursUntilCheckIn >= 24
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-peach-50 py-8">
@@ -294,11 +310,41 @@ const BookingDetailsPage = () => {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-gray-600">
                   <span>Room ({nights} nights)</span>
-                  <span>{formatPrice((booking.total_amount || 0) / 1.12)}</span>
+                  <span>{formatPrice(booking.room?.price_per_night ? booking.room.price_per_night * nights : (booking.total_amount || 0) / 1.12)}</span>
                 </div>
+                
+                {/* Calculate loyalty savings */}
+                {(() => {
+                  if (!booking.room?.price_per_night) return null;
+                  
+                  const standardSubtotal = booking.room.price_per_night * nights;
+                  
+                  // Use branch tax rate if available, default to 15% (backend default)
+                  const taxRate = booking.branch?.tax_rate || 15;
+                  const taxMultiplier = 1 + (taxRate / 100);
+                  
+                  // Back-calculate subtotal paid (Total = Subtotal + Tax => Total = Subtotal * Multiplier)
+                  const paidSubtotal = parseFloat(booking.total_amount) / taxMultiplier;
+                  const discount = standardSubtotal - paidSubtotal;
+                  
+                  // Only show if discount is significant (> 100 LKR to ignore rounding/small variances)
+                  if (discount > 100) {
+                    return (
+                      <div className="flex justify-between text-green-600 font-medium">
+                        <div className="flex items-center">
+                           <Gift className="h-4 w-4 mr-2" />
+                           <span>Loyalty Savings</span>
+                        </div>
+                        <span>-{formatPrice(discount)}</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
                 <div className="flex justify-between text-gray-600">
                   <span>Taxes & Fees</span>
-                  <span>{formatPrice((booking.total_amount || 0) * 0.12)}</span>
+                  <span>{formatPrice(parseFloat(booking.total_amount) - (parseFloat(booking.total_amount) / (1 + ((booking.branch?.tax_rate || 15) / 100))))}</span>
                 </div>
                 <div className="border-t border-gray-200 pt-3">
                   <div className="flex justify-between items-center">
@@ -324,7 +370,7 @@ const BookingDetailsPage = () => {
               <div className="space-y-2">
                 {canCancel && (
                   <button
-                    onClick={handleCancel}
+                    onClick={() => setShowCancelModal(true)}
                     className="btn btn-secondary w-full text-red-600 hover:bg-red-50"
                   >
                     <XCircle className="h-4 w-4 mr-2" />
@@ -358,6 +404,15 @@ const BookingDetailsPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Cancel Confirmation Modal */}
+      <CancelBookingModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={handleCancel}
+        booking={booking}
+        isCancelling={cancelling}
+      />
     </div>
   )
 }

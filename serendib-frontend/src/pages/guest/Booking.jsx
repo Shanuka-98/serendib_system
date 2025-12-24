@@ -4,9 +4,9 @@ import { motion } from 'framer-motion'
 import {
   Calendar, Users, CreditCard, Shield, CheckCircle,
   ArrowLeft, Bed, Wifi, Car, Coffee, MapPin,
-  Star, Info, AlertCircle
+  Star, Info, AlertCircle, Gift
 } from 'lucide-react'
-import { roomAPI, bookingAPI, paymentAPI, stripeAPI } from '../../services/api'
+import { roomAPI, bookingAPI, paymentAPI, stripeAPI, loyaltyAPI } from '../../services/api'
 import { format, differenceInDays, parseISO } from 'date-fns'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
@@ -103,6 +103,12 @@ const BookingPage = () => {
     taxes: 0,
     total: 0
   })
+  
+  // Loyalty program state
+  const [loyalty, setLoyalty] = useState(null)
+  const [pointsToRedeem, setPointsToRedeem] = useState(0)
+  const [loyaltyDiscount, setLoyaltyDiscount] = useState(0)
+  const [pointsDiscount, setPointsDiscount] = useState(0)
 
   useEffect(() => {
     if (!roomId || !checkIn || !checkOut) {
@@ -112,13 +118,24 @@ const BookingPage = () => {
     }
     
     fetchRoomDetails()
+    fetchLoyaltyProfile()
   }, [roomId])
-
+  
   useEffect(() => {
     if (room && checkIn && checkOut) {
       calculatePricing()
     }
-  }, [room, checkIn, checkOut])
+  }, [room, checkIn, checkOut, loyalty, pointsToRedeem])
+  
+  const fetchLoyaltyProfile = async () => {
+    try {
+      const response = await loyaltyAPI.getProfile()
+      setLoyalty(response.data.data?.loyalty || null)
+    } catch (error) {
+      // User might not have loyalty program or not a guest
+      console.log('No loyalty program found')
+    }
+  }
 
   const fetchRoomDetails = async () => {
     try {
@@ -140,15 +157,35 @@ const BookingPage = () => {
     const nights = differenceInDays(parseISO(checkOut), parseISO(checkIn))
     const roomPrice = room.price_per_night || 0
     const subtotal = roomPrice * nights
-    const taxes = subtotal * 0.12 // 12% tax
-    const total = subtotal + taxes
+    
+    // Calculate tier discount
+    let tierDiscount = 0
+    let tierPercent = 0
+    if (loyalty) {
+      const discounts = { bronze: 0, silver: 5, gold: 10, platinum: 15 }
+      tierPercent = discounts[loyalty.tier] || 0
+      tierDiscount = subtotal * (tierPercent / 100)
+    }
+    setLoyaltyDiscount(tierDiscount)
+    
+    // Points discount (1 point = 1 LKR)
+    const ptsDiscount = Math.min(pointsToRedeem, loyalty?.points || 0)
+    setPointsDiscount(ptsDiscount)
+    
+    const discountedSubtotal = subtotal - tierDiscount - ptsDiscount
+    const taxes = discountedSubtotal * 0.12 // 12% tax
+    const total = discountedSubtotal + taxes
     
     setBookingSummary({
       nights,
       roomPrice,
       subtotal,
+      tierPercent,
+      tierDiscount,
+      pointsDiscount: ptsDiscount,
+      pointsToEarn: Math.floor(total / 1000) * 10,
       taxes,
-      total
+      total: Math.max(0, total)
     })
   }
 
@@ -177,7 +214,8 @@ const BookingPage = () => {
         check_in_date: checkIn,
         check_out_date: checkOut,
         number_of_guests: parseInt(guests),
-        special_requests: formData.special_requests || undefined
+        special_requests: formData.special_requests || undefined,
+        redeem_points: pointsToRedeem > 0 ? pointsToRedeem : undefined
       }
 
       // Create booking
@@ -400,6 +438,77 @@ const BookingPage = () => {
               </div>
             </motion.div>
 
+            {/* Loyalty Rewards */}
+            {loyalty && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="glass rounded-2xl p-6 relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 p-3 opacity-10">
+                  <Gift className="h-24 w-24" />
+                </div>
+                
+                <h2 className="text-2xl font-display font-bold text-gray-800 mb-4 flex items-center relative z-10">
+                  <Gift className="h-6 w-6 mr-2 text-primary-500" />
+                  Loyalty Rewards
+                </h2>
+                
+                <div className="space-y-6 relative z-10">
+                  {/* Status & Tier Discount */}
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary-50 to-white rounded-xl border border-primary-100">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`badge ${
+                          loyalty.tier === 'platinum' ? 'badge-primary' : 
+                          loyalty.tier === 'gold' ? 'badge-warning' : 
+                          'badge-secondary'
+                        }`}>
+                          {loyalty.tier.charAt(0).toUpperCase() + loyalty.tier.slice(1)} Member
+                        </span>
+                        {bookingSummary.tierPercent > 0 && (
+                          <span className="text-sm font-bold text-green-600">
+                            {bookingSummary.tierPercent}% Off Applied!
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Balance: <span className="font-bold text-gray-800">{loyalty.points} points</span>
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Earning</p>
+                      <p className="font-bold text-primary-600">+{bookingSummary.pointsToEarn} pts</p>
+                    </div>
+                  </div>
+                  
+                  {/* Points Redemption */}
+                  {loyalty.points > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex justify-between">
+                        <span>Redeem Points</span>
+                        <span className="text-sm text-gray-500">{pointsToRedeem} pts = {formatPrice(pointsToRedeem)}</span>
+                      </label>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max={Math.min(loyalty.points, bookingSummary.subtotal)} 
+                        step="100"
+                        value={pointsToRedeem}
+                        onChange={(e) => setPointsToRedeem(Number(e.target.value))}
+                        className="range range-primary w-full" 
+                      />
+                      <div className="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>0</span>
+                        <span>{Math.min(loyalty.points, bookingSummary.subtotal)} pts</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
             {/* Payment Information */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -464,6 +573,20 @@ const BookingPage = () => {
                   </span>
                   <span className="font-medium">{formatPrice(bookingSummary.subtotal)}</span>
                 </div>
+                
+                {bookingSummary.tierDiscount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Loyalty Discount ({bookingSummary.tierPercent}%)</span>
+                    <span className="font-medium">-{formatPrice(bookingSummary.tierDiscount)}</span>
+                  </div>
+                )}
+                
+                {bookingSummary.pointsDiscount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Points Redeemed</span>
+                    <span className="font-medium">-{formatPrice(bookingSummary.pointsDiscount)}</span>
+                  </div>
+                )}
                 
                 <div className="flex justify-between text-gray-600">
                   <span>Taxes & Fees</span>

@@ -40,7 +40,8 @@ const StaffDashboard = () => {
       
       // Fetch service requests
       const requestsResponse = await serviceRequestAPI.getRequests({ status: 'pending' })
-      const requests = requestsResponse.data.data || []
+      const requestsData = requestsResponse.data.data
+      const requests = Array.isArray(requestsData) ? requestsData : (requestsData?.requests || [])
 
       setStats({
         todayCheckIns: checkIns.length,

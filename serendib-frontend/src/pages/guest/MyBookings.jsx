@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Calendar, MapPin, Users, CreditCard, Clock,
   CheckCircle, XCircle, AlertCircle, Eye, X
@@ -12,6 +12,7 @@ import { toast } from 'react-toastify'
 import EmptyState from '../../components/EmptyState'
 import { RotateCcw } from 'lucide-react'
 import { formatBookingRef } from '../../utils/helpers'
+import CancelBookingModal from '../../components/modals/CancelBookingModal'
 
 const MyBookingsPage = () => {
   const navigate = useNavigate()
@@ -53,18 +54,34 @@ const MyBookingsPage = () => {
     }
   }
 
-  const handleCancelBooking = async (bookingId, reason) => {
-    if (!reason) {
-      reason = prompt('Please provide a cancellation reason:')
-      if (!reason) return
-    }
+  // Cancel Modal State
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [bookingToCancel, setBookingToCancel] = useState(null)
+  const [cancelReason, setCancelReason] = useState('')
+  const [isCancelling, setIsCancelling] = useState(false)
+
+  const openCancelModal = (booking) => {
+    setBookingToCancel(booking)
+    setCancelReason('')
+    setShowCancelModal(true)
+  }
+
+  const confirmCancelBooking = async (reason = cancelReason) => {
+    if (!bookingToCancel) return
 
     try {
-      await bookingAPI.cancelBooking(bookingId, reason)
+      setIsCancelling(true)
+      // Use default reason if empty
+      const finalReason = reason?.trim() || 'Cancelled by user'
+      
+      await bookingAPI.cancelBooking(bookingToCancel.booking_id, finalReason)
       toast.success('Booking cancelled successfully')
       fetchBookings()
+      setShowCancelModal(false)
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to cancel booking')
+    } finally {
+      setIsCancelling(false)
     }
   }
 
@@ -295,28 +312,22 @@ const MyBookingsPage = () => {
                         View Details
                       </button>
                       
-                      {booking.status === 'completed' || booking.status === 'cancelled' ? (
-                        <button
-                          onClick={() => navigate(`/rooms/${booking.room?.room_id}`)}
-                          className="btn btn-secondary w-full"
-                        >
-                          <RotateCcw className="h-4 w-4 mr-2" />
-                          Book Again
-                        </button>
-                      ) : (
-                        (() => {
+
+                      {(() => {
                            const checkInDate = booking.check_in_date || booking.check_in
-                           return checkInDate && isFuture(parseISO(checkInDate))
+                           return checkInDate && 
+                                  isFuture(parseISO(checkInDate)) && 
+                                  booking.status !== 'cancelled' && 
+                                  booking.status !== 'completed'
                          })() && (
                           <button
-                            onClick={() => handleCancelBooking(booking.booking_id)}
+                            onClick={() => openCancelModal(booking)}
                             className="btn btn-secondary w-full text-red-600 hover:bg-red-50"
                           >
                             <X className="h-4 w-4 mr-2" />
                             Cancel
                           </button>
-                        )
-                      )}
+                        )}
                     </div>
                   </div>
                 </div>
@@ -325,6 +336,15 @@ const MyBookingsPage = () => {
           </div>
         )}
       </div>
+
+      {/* Cancel Confirmation Modal */}
+      <CancelBookingModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={confirmCancelBooking}
+        booking={bookingToCancel}
+        isCancelling={isCancelling}
+      />
     </div>
   )
 }

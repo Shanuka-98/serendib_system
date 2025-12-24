@@ -38,6 +38,7 @@ python fix_passwords.py
 | **Notification** | System alerts |
 | **Staff** | Staff details |
 | **LoyaltyProgram** | Points & tiers |
+| **LoyaltyHistory** | Points transactions |
 | **AuditLog** | Audit trail |
 | **PropertyConfig** | Branch configs |
 | **Promotion** | Discount codes |
@@ -47,6 +48,7 @@ python fix_passwords.py
 erDiagram
     User ||--|| Staff : "is_staff_profile"
     User ||--|| LoyaltyProgram : "has_loyalty"
+    LoyaltyProgram ||--o{ LoyaltyHistory : "has_history"
     User ||--o{ Booking : "makes"
     User ||--o{ Payment : "pays"
     User ||--o{ ServiceRequest : "requests"
@@ -164,6 +166,16 @@ erDiagram
         datetime join_date
         int lifetime_points
         datetime last_activity
+    }
+
+    LoyaltyHistory {
+        int id PK
+        int loyalty_id FK
+        int amount
+        enum transaction_type "earned|redeemed|adjusted|expired"
+        string description
+        int related_booking_id
+        datetime created_at
     }
 
     ServiceRequest {

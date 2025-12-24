@@ -212,6 +212,22 @@ CREATE TABLE LoyaltyProgram (
 ) ENGINE=InnoDB;
 
 -- =====================================================
+-- TABLE: LoyaltyHistory
+-- =====================================================
+CREATE TABLE LoyaltyHistory (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    loyalty_id INT NOT NULL,
+    amount INT NOT NULL,
+    transaction_type ENUM('earned', 'redeemed', 'adjusted', 'expired') NOT NULL,
+    description VARCHAR(255),
+    related_booking_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (loyalty_id) REFERENCES LoyaltyProgram(loyalty_id) ON DELETE CASCADE,
+    INDEX idx_loyalty_history_loyalty (loyalty_id),
+    INDEX idx_loyalty_history_created (created_at)
+) ENGINE=InnoDB;
+
+-- =====================================================
 -- TABLE: AuditLog
 -- =====================================================
 CREATE TABLE AuditLog (

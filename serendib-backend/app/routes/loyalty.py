@@ -89,7 +89,7 @@ def redeem_points():
 @jwt_required()
 def get_points_history():
     """
-    Get loyalty points history
+    Get loyalty points history (earnings and redemptions)
     """
     current_user = get_current_user()
     
@@ -99,27 +99,27 @@ def get_points_history():
     if not current_user.loyalty_program:
         return error_response('Loyalty program not found', status_code=404)
     
-    # Get bookings for points history
-    from app.models.booking import Booking
-    bookings = Booking.query.filter_by(
-        user_id=current_user.user_id,
-        status='checked_out'
-    ).order_by(Booking.checked_out_at.desc()).limit(50).all()
+    # Get history from LoyaltyHistory table
+    from app.models.loyalty_history import LoyaltyHistory
     
-    history = []
-    for booking in bookings:
-        points_earned = LoyaltyProgram.calculate_points_for_amount(float(booking.total_amount))
-        history.append({
-            'booking_id': booking.booking_id,
-            'date': booking.checked_out_at.isoformat() if booking.checked_out_at else None,
-            'amount': float(booking.total_amount),
-            'points_earned': points_earned,
-            'branch': booking.branch.name if booking.branch else None
+    history_records = LoyaltyHistory.query.filter_by(
+        loyalty_id=current_user.loyalty_program.loyalty_id
+    ).order_by(LoyaltyHistory.created_at.desc()).limit(50).all()
+    
+    formatted_history = []
+    for record in history_records:
+        formatted_history.append({
+            'id': record.id,
+            'date': record.created_at.isoformat() if record.created_at else None,
+            'description': record.description,
+            'type': record.transaction_type,
+            'points': abs(record.amount),
+            'related_booking_id': record.related_booking_id
         })
     
     return success_response(data={
-        'history': history,
-        'count': len(history)
+        'history': formatted_history,
+        'count': len(formatted_history)
     })
 
 

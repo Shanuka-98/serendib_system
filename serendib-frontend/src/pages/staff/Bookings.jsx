@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, Calendar, MapPin, User, CreditCard, CheckCircle, 
-  X, Printer, Clock, Filter, Eye, DollarSign, RefreshCw
+  X, Printer, Clock, Filter, Eye, DollarSign, RefreshCw, XCircle, AlertTriangle, Gift
 } from 'lucide-react'
 import { bookingAPI, paymentAPI } from '../../services/api'
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, differenceInDays } from 'date-fns'
 import { toast } from 'react-toastify'
 import { formatBookingRef } from '../../utils/helpers'
+import CancelBookingModal from '../../components/modals/CancelBookingModal'
 
 const StaffBookingsPage = () => {
   const [bookings, setBookings] = useState([])
@@ -17,6 +18,9 @@ const StaffBookingsPage = () => {
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [processingPayment, setProcessingPayment] = useState(false)
   const [paymentConfirmBooking, setPaymentConfirmBooking] = useState(null)
+  const [cancelBooking, setCancelBooking] = useState(null)
+  const [cancelReason, setCancelReason] = useState('')
+  const [cancelling, setCancelling] = useState(false)
 
   useEffect(() => {
     fetchBookings()
@@ -72,6 +76,32 @@ const StaffBookingsPage = () => {
       toast.error(error.response?.data?.message || 'Failed to process payment')
     } finally {
       setProcessingPayment(false)
+    }
+  }
+
+  const confirmCancel = async (reason = cancelReason) => {
+    if (!cancelBooking || !reason?.trim()) {
+      toast.error('Please provide a cancellation reason')
+      return
+    }
+    
+    try {
+      setCancelling(true)
+      await bookingAPI.cancelBooking(cancelBooking.booking_id, reason)
+      toast.success('Booking cancelled successfully')
+      
+      // Close modals
+      setCancelBooking(null)
+      setCancelReason('')
+      setSelectedBooking(null)
+      
+      // Refresh bookings list
+      await fetchBookings()
+    } catch (error) {
+      console.error('Cancel error:', error)
+      toast.error(error.response?.data?.message || 'Failed to cancel booking')
+    } finally {
+      setCancelling(false)
     }
   }
 
@@ -421,7 +451,40 @@ const StaffBookingsPage = () => {
                     </div>
                   </div>
                   
-                  <div className="p-4 bg-primary-50 rounded-xl">
+                  <div className="p-4 bg-primary-50 rounded-xl space-y-2">
+                    {(() => {
+                      if (!selectedBooking.room?.price_per_night) return null;
+                      
+                      // Robust date access
+                      const checkIn = selectedBooking.check_in_date || selectedBooking.check_in;
+                      const checkOut = selectedBooking.check_out_date || selectedBooking.check_out;
+                      
+                      if (!checkIn || !checkOut) return null;
+                      
+                      const nights = differenceInDays(parseISO(checkOut), parseISO(checkIn));
+                      const standardSubtotal = selectedBooking.room.price_per_night * nights;
+                      
+                      // Use branch tax rate if available, default to 15% (backend default)
+                      const taxRate = selectedBooking.branch?.tax_rate || 15;
+                      const taxMultiplier = 1 + (taxRate / 100);
+                      
+                      const paidSubtotal = parseFloat(selectedBooking.total_amount) / taxMultiplier;
+                      const discount = standardSubtotal - paidSubtotal;
+                      
+                      if (discount > 100) {
+                        return (
+                          <div className="flex justify-between text-sm text-green-700">
+                             <div className="flex items-center">
+                                <Gift className="h-4 w-4 mr-2" />
+                                <span>Loyalty Savings</span>
+                             </div>
+                             <span>-{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR', minimumFractionDigits: 0 }).format(discount)}</span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
                     <div className="flex justify-between items-center">
                       <span className="text-gray-700">Total Amount</span>
                       <span className="text-2xl font-bold text-primary-600">
@@ -458,6 +521,16 @@ const StaffBookingsPage = () => {
                       >
                         <Printer className="h-4 w-4 mr-2" />
                         Print Receipt
+                      </button>
+                    )}
+                    
+                    {selectedBooking.status !== 'cancelled' && selectedBooking.status !== 'checked_out' && (
+                      <button
+                        onClick={() => setCancelBooking(selectedBooking)}
+                        className="btn btn-secondary text-red-600 hover:bg-red-50 flex-1"
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Cancel
                       </button>
                     )}
                   </div>
@@ -527,6 +600,19 @@ const StaffBookingsPage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Cancel Confirmation Modal */}
+      {/* Cancel Confirmation Modal */}
+      <CancelBookingModal
+        isOpen={!!cancelBooking}
+        onClose={() => {
+          setCancelBooking(null)
+          setCancelReason('')
+        }}
+        onConfirm={confirmCancel}
+        booking={cancelBooking}
+        isCancelling={cancelling}
+      />
     </div>
   )
 }
