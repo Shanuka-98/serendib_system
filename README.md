@@ -93,19 +93,24 @@
 - **Stripe Payments**: Secure credit card processing using Payment Intents and Webhooks.
 - **Text.lk SMS Gateway**: Automated SMS notifications for booking confirmations, check-in reminders, and payment receipts.
 
-## Recent Fixes and Improvements (December 24, 2025 - Evening)
+## Recent Fixes and Improvements (December 24, 2025 - Night)
 
 ### 🌟 New Features
-1.  **Staff Bookings Management Page**:
+1.  **Email Integration (Mailtrap SMTP)**:
+    -   Configured email service for password reset and email verification.
+    -   Forgot Password flow: sends reset link via email.
+    -   Email Verification: sends verification link on registration.
+    -   Reset Password page integrated with backend token validation.
+2.  **Staff Bookings Management Page**:
     -   New `/staff/bookings` page to view and manage all guest bookings.
     -   Booking list with status filters (All, Pending, Confirmed, Checked In, Checked Out).
     -   Search functionality by guest, room, or booking ID.
     -   Detailed booking modal with full information.
-2.  **Cash Payment Workflow**:
+3.  **Cash Payment Workflow**:
     -   Staff can mark pending cash payments as completed using "Mark as Paid" button.
     -   Custom confirmation modal for payment processing.
     -   Receipt printing functionality for completed payments.
-3.  **Staff Navbar Dropdown**:
+4.  **Staff Navbar Dropdown**:
     -   Converted staff navigation to dropdown categories like admin navbar.
     -   Operations: Check-in/Out, All Bookings, Room Status.
     -   Services: Service Requests.
@@ -238,14 +243,8 @@
 
 ---
 
-## Roadmap & Remaining Tasks
+## Roadmap & Future Enhancements
 
-### Technical Debt / Minor Polish
-- [ ] **Image Uploads**: Fully implement image upload for creating new rooms (currently uses URLs).
-- [ ] **Email Service**: Connect SMTP for real emails (Reset Password, Confirmation).
-- [ ] **Forgotten Password**: Implement frontend flow for password reset.
-
-### Future Enhancements
 - [ ] **Dark Mode**: Toggle for theme switching.
 - [ ] **Multi-language**: Localization support.
 - [ ] **Export**: PDF/Excel export for Admin reports.

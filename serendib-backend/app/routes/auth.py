@@ -3,7 +3,7 @@ Authentication Routes
 User registration, login, password reset, email verification
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import (
     create_access_token, create_refresh_token,
     jwt_required, get_jwt_identity
@@ -17,6 +17,7 @@ from app.utils.helpers import (
     generate_token, success_response, error_response,
     validate_required_fields, get_ip_address
 )
+from app.utils.email import send_email
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -92,9 +93,30 @@ def register():
         
         db.session.commit()
         
-        # TODO: Send verification email
-        verification_link = f"{request.host_url}api/auth/verify-email/{user.verification_token}"
-        print(f"Verification link: {verification_link}")
+        # Send verification email
+        verification_link = f"{request.host_url}api/auth/verify-email/{user.verification_token}" \
+                            if 'localhost' in request.host_url else \
+                            f"{current_app.config['FRONTEND_URL']}/verify-email?token={user.verification_token}"
+                            
+        # For guest frontend, we usually redirect. If API is called directly, link is API link.
+        # But for separation, we usually send link to Frontend Route which calls API.
+        # Let's assume Frontend has /verify-email route.
+        frontend_verify_link = f"{current_app.config['FRONTEND_URL']}/verify-email?token={user.verification_token}"
+        
+        email_html = f"""
+        <h3>Welcome to Serendib Hotels!</h3>
+        <p>Please verify your email address by clicking the link below:</p>
+        <p><a href="{frontend_verify_link}">Verify Email</a></p>
+        <p>Or copy this link: {frontend_verify_link}</p>
+        <p>Link expires in 24 hours.</p>
+        """
+        
+        send_email(
+            subject="Verify your Serendib Hotels Account",
+            recipient=user.email,
+            html=email_html
+        )
+        print(f"Verification link sent to {user.email}")
         
         return success_response(
             data={
@@ -254,9 +276,26 @@ def forgot_password():
     
     db.session.commit()
     
-    # TODO: Send password reset email
-    reset_link = f"{request.host_url}reset-password?token={reset_token}"
-    print(f"Password reset link: {reset_link}")
+    # Send password reset email
+    reset_link = f"{current_app.config['FRONTEND_URL']}/reset-password?token={reset_token}"
+    
+    email_html = f"""
+    <h3>Password Reset Request</h3>
+    <p>We received a request to reset your password.</p>
+    <p>Click the link below to reset it:</p>
+    <p><a href="{reset_link}">Reset Password</a></p>
+    <p>Or copy this link: {reset_link}</p>
+    <p>Link expires in 1 hour.</p>
+    <p>If you did not request this, please ignore this email.</p>
+    """
+    
+
+    send_email(
+        subject="Password Reset Request - Serendib Hotels",
+        recipient=user.email,
+        html=email_html
+    )
+    print(f"Password reset link sent to {user.email}")
     
     # Log action
     AuditLog.log_action(
@@ -385,9 +424,20 @@ def resend_verification():
     user.verification_token = generate_token()
     db.session.commit()
     
-    # TODO: Send verification email
-    verification_link = f"{request.host_url}api/auth/verify-email/{user.verification_token}"
-    print(f"Verification link: {verification_link}")
+    # Send verification email
+    frontend_verify_link = f"{current_app.config['FRONTEND_URL']}/verify-email?token={user.verification_token}"
+    
+    email_html = f"""
+    <h3>Verify your email</h3>
+    <p>Please verify your email address by clicking the link below:</p>
+    <p><a href="{frontend_verify_link}">Verify Email</a></p>
+    """
+    
+    send_email(
+        subject="Verify your Serendib Hotels Account",
+        recipient=user.email,
+        html=email_html
+    )
     
     return success_response(message='Verification email sent successfully')
 

@@ -88,6 +88,8 @@ cp env.example .env
 # For XAMPP: DB_PASSWORD= (leave empty)
 # For other MySQL: DB_PASSWORD=your_password
 
+# Configure Email (see Email Configuration section below)
+
 # Start backend server
 python run.py
 ```
@@ -109,6 +111,77 @@ npm run dev
 ```
 
 Frontend should be running on: **http://localhost:5173**
+
+---
+
+## Email Configuration (Required for Password Reset & Verification)
+
+The application requires SMTP configuration to send password reset and email verification emails.
+
+### Option A: Mailtrap (Recommended for Testing/Development)
+
+1. Sign up at [mailtrap.io](https://mailtrap.io) (free tier available)
+2. Go to Email Testing → Inboxes → SMTP Settings
+3. Update `.env` file with your Mailtrap credentials:
+
+```env
+MAIL_SERVER=sandbox.smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USE_TLS=True
+MAIL_USE_SSL=False
+MAIL_USERNAME=your_mailtrap_username
+MAIL_PASSWORD=your_mailtrap_password
+MAIL_DEFAULT_SENDER=noreply@serendibhotels.lk
+```
+
+> **Note:** Mailtrap catches all outgoing emails in a sandbox inbox. Emails won't reach real recipients but you can view them in the Mailtrap dashboard.
+
+### Option B: Gmail (For Production/Demo with Real Emails)
+
+1. Enable 2-Step Verification in your Google Account
+2. Generate an App Password: [Google App Passwords](https://myaccount.google.com/apppasswords)
+3. Update `.env` file:
+
+```env
+MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USE_TLS=True
+MAIL_USE_SSL=False
+MAIL_USERNAME=your-gmail@gmail.com
+MAIL_PASSWORD=your-app-password
+MAIL_DEFAULT_SENDER=your-gmail@gmail.com
+```
+
+> **Important:** Use an App Password, not your regular Gmail password.
+
+---
+
+## Stripe Payment Configuration (Required for Bookings)
+
+The application uses Stripe for secure payment processing. You need sandbox API keys for development.
+
+### Getting Stripe Sandbox Keys
+
+1. Sign up at [stripe.com](https://stripe.com) (free to create account)
+2. Toggle to **Sandbox Mode** (top-right of dashboard) to see your API keys
+3. Copy your API keys and update `.env`:
+
+```env
+STRIPE_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxxxxx
+STRIPE_PUBLISHABLE_KEY=pk_test_xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+> **Note:** Sandbox keys start with `sk_test_` and `pk_test_`. These allow testing without real charges.
+
+### Test Card Numbers
+
+Use these test cards during checkout:
+| Card Number | Description |
+|-------------|-------------|
+| `4242 4242 4242 4242` | Successful payment |
+| `4000 0000 0000 0002` | Card declined |
+
+Use any future expiry date (e.g., 12/34) and any 3-digit CVC.
 
 ---
 
