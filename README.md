@@ -110,6 +110,17 @@
     -   Operations: Check-in/Out, All Bookings, Room Status.
     -   Services: Service Requests.
 
+### 🌟 Latest Architecture Improvements (December 24, 2025 - Night)
+1.  **Loyalty System Refactoring**:
+    -   **New Database Table**: Created `LoyaltyHistory` for transaction tracking (User ID, Amount, Type, Description, Booking Ref).
+    -   **Frontend**: Updated display to show formatted booking references (e.g., `SER-2025-000018`) instead of raw IDs.
+2.  **Room Cancellation Logic Upgrade**:
+    -   **Room Status**: Cancelling a booking now reliably resets status to `available`, even if the room was `occupied` or `reserved`.
+    -   **Staff Override**: Staff/Admin users can now force-cancel bookings, bypassing the 24-hour guest cancellation policy.
+3.  **Stability Fixes**:
+    -   **Loyalty History**: Fixed "Points History" empty view bug by sorting on correct timestamp field.
+    -   **Cancellation Modal**: Standardized Guest cancellation UI to match Staff version.
+
 ### 🐛 Bug Fixes
 1.  **Payment Validation for Check-in**:
     -   Added backend validation to prevent check-in without completed payment.
