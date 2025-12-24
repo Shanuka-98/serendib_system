@@ -114,6 +114,10 @@
     -   Converted staff navigation to dropdown categories like admin navbar.
     -   Operations: Check-in/Out, All Bookings, Room Status.
     -   Services: Service Requests.
+5.  **Favicon & Web App Manifest**:
+    -   Added proper favicon in multiple sizes (16x16, 32x32, 180x180).
+    -   Added web manifest for mobile "Add to Home Screen" support.
+    -   Android Chrome icons (192x192, 512x512) included.
 
 ### 🌟 Latest Architecture Improvements (December 24, 2025 - Night)
 1.  **Loyalty System Refactoring**:
