@@ -196,15 +196,15 @@ const BookingPage = () => {
         return
       }
       
-      // For non-card payments (cash, bank transfer), use simple payment API
-      const paymentData = {
-        booking_id: booking.booking_id,
-        payment_method: formData.payment_method
+      // For cash payments, booking stays pending until staff collects payment at check-in
+      if (formData.payment_method === 'cash') {
+        toast.success('Booking created! Pay at hotel reception during check-in.')
+        navigate(`/bookings/${booking.booking_id}`)
+        return
       }
-
-      await paymentAPI.processPayment(paymentData)
       
-      toast.success('Booking confirmed! 🎉')
+      // For any other payment method, navigate to booking
+      toast.success('Booking created!')
       navigate(`/bookings/${booking.booking_id}`)
     } catch (error) {
       console.error('Booking error:', error)
@@ -425,7 +425,6 @@ const BookingPage = () => {
                   >
                     <option value="credit_card">Credit/Debit Card</option>
                     <option value="cash">Cash on Arrival</option>
-                    <option value="bank_transfer">Bank Transfer</option>
                   </select>
                 </div>
 

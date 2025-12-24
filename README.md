@@ -1,6 +1,6 @@
 # Serendib Smart Hotel Management System - Complete Project Documentation
 
-**Last Updated:** December 23, 2025  
+**Last Updated:** December 24, 2025  
 **Overall Progress:** **98% Complete** - All Core Features Fully Functional & Polished
 
 > **Note:** This is the comprehensive project documentation. All project status, information, and recent updates are consolidated here.
@@ -93,9 +93,58 @@
 - **Stripe Payments**: Secure credit card processing using Payment Intents and Webhooks.
 - **Text.lk SMS Gateway**: Automated SMS notifications for booking confirmations, check-in reminders, and payment receipts.
 
+## Recent Fixes and Improvements (December 24, 2025 - Evening)
+
+### 🌟 New Features
+1.  **Staff Bookings Management Page**:
+    -   New `/staff/bookings` page to view and manage all guest bookings.
+    -   Booking list with status filters (All, Pending, Confirmed, Checked In, Checked Out).
+    -   Search functionality by guest, room, or booking ID.
+    -   Detailed booking modal with full information.
+2.  **Cash Payment Workflow**:
+    -   Staff can mark pending cash payments as completed using "Mark as Paid" button.
+    -   Custom confirmation modal for payment processing.
+    -   Receipt printing functionality for completed payments.
+3.  **Staff Navbar Dropdown**:
+    -   Converted staff navigation to dropdown categories like admin navbar.
+    -   Operations: Check-in/Out, All Bookings, Room Status.
+    -   Services: Service Requests.
+
+### 🐛 Bug Fixes
+1.  **Payment Validation for Check-in**:
+    -   Added backend validation to prevent check-in without completed payment.
+    -   Returns clear error message: "Payment must be completed before check-in".
+2.  **Cash on Arrival Flow**:
+    -   Fixed issue where cash bookings were auto-marked as paid.
+    -   Cash bookings now stay pending until staff manually marks as paid.
+    -   Removed Bank Transfer payment option from UI.
+3.  **Navigation Fixes**:
+    -   Fixed "Back to Bookings" link to correctly navigate to guest bookings page.
+4.  **Duplicate Toast Notifications**:
+    -   Fixed global API interceptor showing duplicate error toasts.
+    -   Interceptor now only shows toast for server errors (5xx).
+
 ---
 
-## Recent Fixes & Improvements (December 23, 2025)
+## Previous Updates (December 24, 2025 - Morning)
+
+### 🌟 New Features
+1.  **Guest Footer Pages**:
+    -   Added four static pages: About, Contact, Careers, and Privacy.
+    -   Created a reusable `Footer` component for all guest-facing pages.
+    -   Footer remains hidden on auth pages and admin or staff dashboards.
+2.  **Smooth Scroll Behavior**:
+    -   Added `ScrollToTop` component for seamless page transitions.
+    -   Pages now scroll to top automatically when routes change.
+
+### 🐛 Bug Fixes
+1.  **Analytics Dashboard Charts**:
+    -   Fixed Y-axis number formatting. Charts now display "35K" and "70K" instead of "05000" and "70000".
+    -   Added `formatYAxis` function for consistent number display across all charts.
+
+---
+
+## Previous Updates (December 23, 2025)
 
 ### 🌟 New Features
 1.  **Staff Check-In/Out History**:

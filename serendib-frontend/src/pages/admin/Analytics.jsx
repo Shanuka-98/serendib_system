@@ -117,6 +117,17 @@ const AnalyticsPage = () => {
     }).format(value)
   }
 
+  // Format numbers for Y-axis (e.g., 1000 -> 1K, 1000000 -> 1M)
+  const formatYAxis = (value) => {
+    if (value >= 1000000) {
+      return `${(value / 1000000).toFixed(1)}M`
+    }
+    if (value >= 1000) {
+      return `${(value / 1000).toFixed(0)}K`
+    }
+    return value.toString()
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-peach-50 py-8">
@@ -217,17 +228,17 @@ const AnalyticsPage = () => {
 
         {/* Revenue Tab */}
         {activeTab === 'revenue' && data.revenue && (
-          <RevenueAnalytics data={data.revenue} formatCurrency={formatCurrency} />
+          <RevenueAnalytics data={data.revenue} formatCurrency={formatCurrency} formatYAxis={formatYAxis} />
         )}
 
         {/* Occupancy Tab */}
         {activeTab === 'occupancy' && data.occupancy && (
-          <OccupancyAnalytics data={data.occupancy} />
+          <OccupancyAnalytics data={data.occupancy} formatYAxis={formatYAxis} />
         )}
 
         {/* Bookings Tab */}
         {activeTab === 'bookings' && data.bookingTrends && (
-          <BookingTrendsAnalytics data={data.bookingTrends} formatCurrency={formatCurrency} />
+          <BookingTrendsAnalytics data={data.bookingTrends} formatCurrency={formatCurrency} formatYAxis={formatYAxis} />
         )}
 
         {/* Customers Tab */}
@@ -240,7 +251,7 @@ const AnalyticsPage = () => {
 }
 
 // Revenue Analytics Component
-const RevenueAnalytics = ({ data, formatCurrency }) => {
+const RevenueAnalytics = ({ data, formatCurrency, formatYAxis }) => {
   const summary = data.summary || {}
   const dailyRevenue = data.daily_revenue || []
   const revenueByBranch = data.revenue_by_branch || []
@@ -287,7 +298,7 @@ const RevenueAnalytics = ({ data, formatCurrency }) => {
           <LineChart data={dailyRevenue}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
-            <YAxis />
+            <YAxis tickFormatter={formatYAxis} />
             <Tooltip formatter={(value) => formatCurrency(value)} />
             <Legend />
             <Line type="monotone" dataKey="revenue" stroke="#0ea5e9" strokeWidth={2} name="Revenue" />
@@ -303,7 +314,7 @@ const RevenueAnalytics = ({ data, formatCurrency }) => {
             <BarChart data={revenueByBranch}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="branch" />
-              <YAxis />
+              <YAxis tickFormatter={formatYAxis} />
               <Tooltip formatter={(value) => formatCurrency(value)} />
               <Legend />
               <Bar dataKey="revenue" fill="#0ea5e9" name="Revenue" />
@@ -340,7 +351,7 @@ const RevenueAnalytics = ({ data, formatCurrency }) => {
 }
 
 // Occupancy Analytics Component
-const OccupancyAnalytics = ({ data }) => {
+const OccupancyAnalytics = ({ data, formatYAxis }) => {
   const current = data.current || {}
   const dailyOccupancy = data.daily_occupancy || []
   const branchOccupancy = data.branch_occupancy || []
@@ -387,7 +398,7 @@ const OccupancyAnalytics = ({ data }) => {
           <LineChart data={dailyOccupancy}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
-            <YAxis />
+            <YAxis tickFormatter={formatYAxis} />
             <Tooltip />
             <Legend />
             <Line type="monotone" dataKey="bookings" stroke="#0ea5e9" strokeWidth={2} name="Bookings" />
@@ -404,7 +415,7 @@ const OccupancyAnalytics = ({ data }) => {
             <BarChart data={branchOccupancy}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="branch_name" />
-              <YAxis />
+              <YAxis tickFormatter={formatYAxis} />
               <Tooltip />
               <Legend />
               <Bar dataKey="occupancy_rate" fill="#0ea5e9" name="Occupancy %" />
@@ -419,7 +430,7 @@ const OccupancyAnalytics = ({ data }) => {
             <BarChart data={roomTypeOccupancy}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="room_type" />
-              <YAxis />
+              <YAxis tickFormatter={formatYAxis} />
               <Tooltip />
               <Legend />
               <Bar dataKey="occupancy_rate" fill="#10b981" name="Occupancy %" />
@@ -432,7 +443,7 @@ const OccupancyAnalytics = ({ data }) => {
 }
 
 // Booking Trends Analytics Component
-const BookingTrendsAnalytics = ({ data, formatCurrency }) => {
+const BookingTrendsAnalytics = ({ data, formatCurrency, formatYAxis }) => {
   const monthlyTrends = data.monthly_trends || []
   const insights = data.insights || {}
   const bookingsByStatus = data.bookings_by_status || {}
@@ -471,7 +482,7 @@ const BookingTrendsAnalytics = ({ data, formatCurrency }) => {
           <BarChart data={monthlyTrends}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
-            <YAxis />
+            <YAxis tickFormatter={formatYAxis} />
             <Tooltip />
             <Legend />
             <Bar dataKey="bookings" fill="#0ea5e9" name="Bookings" />

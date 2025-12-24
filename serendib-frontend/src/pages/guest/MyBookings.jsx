@@ -11,6 +11,7 @@ import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
 import EmptyState from '../../components/EmptyState'
 import { RotateCcw } from 'lucide-react'
+import { formatBookingRef } from '../../utils/helpers'
 
 const MyBookingsPage = () => {
   const navigate = useNavigate()
@@ -201,7 +202,7 @@ const MyBookingsPage = () => {
                           {booking.room?.room_type?.charAt(0).toUpperCase() + booking.room?.room_type?.slice(1)} Room
                         </h3>
                         <p className="text-gray-600">
-                          Booking #{booking.booking_id}
+                          {formatBookingRef(booking.booking_id)}
                         </p>
                       </div>
                       {getStatusBadge(booking)}
@@ -210,7 +211,7 @@ const MyBookingsPage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <div className="flex items-center text-gray-600">
                         <MapPin className="h-5 w-5 mr-2 text-primary-500" />
-                        <span>{booking.room?.branch?.name || 'Hotel'}</span>
+                        <span>{booking.room?.branch_name || booking.branch?.name || 'Hotel'}</span>
                       </div>
                       <div className="flex items-center text-gray-600">
                         <Users className="h-5 w-5 mr-2 text-primary-500" />
@@ -271,7 +272,7 @@ const MyBookingsPage = () => {
                         })()}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        {booking.payment_status === 'paid' ? (
+                        {booking.payment_status === 'completed' || booking.payment_status === 'paid' ? (
                           <span className="text-mint-600 flex items-center">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Paid

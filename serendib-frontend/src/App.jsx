@@ -31,6 +31,7 @@ import StaffDashboard from './pages/staff/Dashboard'
 import CheckInOutPage from './pages/staff/CheckInOut'
 import ServiceManagementPage from './pages/staff/ServiceManagement'
 import RoomStatusPage from './pages/staff/RoomStatus'
+import StaffBookingsPage from './pages/staff/Bookings'
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard'
@@ -71,6 +72,7 @@ function App() {
           
           {/* Staff Routes */}
           <Route path="/staff" element={<ProtectedRoute roles={['staff', 'admin']}><StaffDashboard /></ProtectedRoute>} />
+          <Route path="/staff/bookings" element={<ProtectedRoute roles={['staff', 'admin']}><StaffBookingsPage /></ProtectedRoute>} />
           <Route path="/staff/check-in-out" element={<ProtectedRoute roles={['staff', 'admin']}><CheckInOutPage /></ProtectedRoute>} />
           <Route path="/staff/services" element={<ProtectedRoute roles={['staff', 'admin']}><ServiceManagementPage /></ProtectedRoute>} />
           <Route path="/staff/room-status" element={<ProtectedRoute roles={['staff', 'admin']}><RoomStatusPage /></ProtectedRoute>} />

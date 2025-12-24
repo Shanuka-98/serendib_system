@@ -155,6 +155,16 @@ class Booking(db.Model):
         if self.status != 'confirmed':
             return False, "Only confirmed bookings can be checked in"
         
+        # Check if payment is completed
+        from app.models.payment import Payment
+        completed_payment = Payment.query.filter_by(
+            booking_id=self.booking_id,
+            payment_status='completed'
+        ).first()
+        
+        if not completed_payment:
+            return False, "Payment must be completed before check-in"
+        
         today = datetime.utcnow().date()
         if self.check_in_date > today:
             return False, "Check-in date has not arrived yet"

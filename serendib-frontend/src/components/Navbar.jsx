@@ -44,12 +44,26 @@ const Navbar = () => {
     { path: '/profile', label: 'Profile', icon: User },
   ]
 
-  // Staff Navigation
-  const staffNavItems = [
-    { path: '/staff', label: 'Dashboard', icon: BarChart3 },
-    { path: '/staff/check-in-out', label: 'Check-in/Out', icon: CheckCircle },
-    { path: '/staff/room-status', label: 'Room Status', icon: Bed },
-    { path: '/staff/services', label: 'Services', icon: AlertCircle },
+  // Staff Navigation with Categories (like Admin)
+  const staffNavCategories = [
+    {
+      label: 'Operations',
+      icon: CheckCircle,
+      type: 'dropdown',
+      items: [
+        { path: '/staff/check-in-out', label: 'Check-in/Out', icon: CheckCircle },
+        { path: '/staff/bookings', label: 'All Bookings', icon: Calendar },
+        { path: '/staff/room-status', label: 'Room Status', icon: Bed },
+      ]
+    },
+    {
+      label: 'Services',
+      icon: AlertCircle,
+      type: 'dropdown',
+      items: [
+        { path: '/staff/services', label: 'Requests', icon: AlertCircle },
+      ]
+    },
   ]
 
   // Admin Navigation with Categories
@@ -76,7 +90,6 @@ const Navbar = () => {
   ]
 
   const getNavItems = () => {
-    if (isStaff) return staffNavItems
     if (isGuest) return guestNavItems
     return []
   }
@@ -183,8 +196,64 @@ const Navbar = () => {
             </div>
           )}
 
-          {/* Desktop Navigation - Guest/Staff (flat list) */}
-          {isAuthenticated && !isAdmin && navItems.length > 0 && (
+          {/* Desktop Navigation - Staff with Dropdowns */}
+          {isAuthenticated && isStaff && (
+            <div className="hidden md:flex items-center gap-2 ml-auto mr-4" ref={dropdownRef}>
+              {staffNavCategories.map((item) => {
+                const Icon = item.icon
+                const isDropdownActive = item.items?.some(i => isActive(i.path))
+                return (
+                  <div key={item.label} className="relative">
+                    <button
+                      onClick={() => toggleDropdown(item.label)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
+                        isDropdownActive || activeDropdown === item.label
+                          ? 'bg-primary-100 text-primary-700'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {item.label}
+                      <ChevronDown className={`h-3 w-3 transition-transform ${activeDropdown === item.label ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    <AnimatePresence>
+                      {activeDropdown === item.label && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50"
+                        >
+                          {item.items.map((subItem) => {
+                            const SubIcon = subItem.icon
+                            return (
+                              <Link
+                                key={subItem.path}
+                                to={subItem.path}
+                                onClick={() => setActiveDropdown(null)}
+                                className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-all ${
+                                  isActive(subItem.path)
+                                    ? 'bg-primary-50 text-primary-700 font-medium'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                                }`}
+                              >
+                                <SubIcon className="h-4 w-4" />
+                                {subItem.label}
+                              </Link>
+                            )
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Desktop Navigation - Guest (flat list) */}
+          {isAuthenticated && isGuest && navItems.length > 0 && (
             <div className="hidden md:flex items-center gap-1">
               {navItems.map((item) => {
                 const Icon = item.icon
@@ -382,8 +451,38 @@ const Navbar = () => {
                 )
               })}
 
-              {/* Guest/Staff Mobile Nav */}
-              {!isAdmin && navItems.map((item) => {
+              {/* Staff Mobile Nav */}
+              {isStaff && staffNavCategories.map((item) => {
+                const Icon = item.icon
+                return (
+                  <div key={item.label} className="space-y-1">
+                    <p className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      {item.label}
+                    </p>
+                    {item.items.map((subItem) => {
+                      const SubIcon = subItem.icon
+                      return (
+                        <Link
+                          key={subItem.path}
+                          to={subItem.path}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`flex items-center gap-3 px-4 py-2.5 rounded-xl ml-2 ${
+                            isActive(subItem.path)
+                              ? 'bg-primary-100 text-primary-700 font-medium'
+                              : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <SubIcon className="h-4 w-4" />
+                          {subItem.label}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )
+              })}
+
+              {/* Guest Mobile Nav */}
+              {isGuest && navItems.map((item) => {
                 const Icon = item.icon
                 return (
                   <Link

@@ -29,8 +29,14 @@ const StaffDashboard = () => {
       
       // Filter today's check-ins and check-outs
       const today = format(new Date(), 'yyyy-MM-dd')
-      const checkIns = bookings.filter(b => format(new Date(b.check_in), 'yyyy-MM-dd') === today)
-      const checkOuts = bookings.filter(b => format(new Date(b.check_out), 'yyyy-MM-dd') === today)
+      const checkIns = bookings.filter(b => {
+        const checkInDate = b.check_in_date || b.check_in
+        return checkInDate && format(new Date(checkInDate), 'yyyy-MM-dd') === today
+      })
+      const checkOuts = bookings.filter(b => {
+        const checkOutDate = b.check_out_date || b.check_out
+        return checkOutDate && format(new Date(checkOutDate), 'yyyy-MM-dd') === today
+      })
       
       // Fetch service requests
       const requestsResponse = await serviceRequestAPI.getRequests({ status: 'pending' })
@@ -40,7 +46,7 @@ const StaffDashboard = () => {
         todayCheckIns: checkIns.length,
         todayCheckOuts: checkOuts.length,
         pendingRequests: requests.length,
-        activeBookings: bookings.filter(b => b.status === 'checked_in').length
+        activeBookings: bookings.filter(b => b.status === 'confirmed' || b.status === 'checked_in').length
       })
       
       setTodayBookings([...checkIns, ...checkOuts].slice(0, 5))
@@ -196,25 +202,25 @@ const StaffDashboard = () => {
               <p className="text-gray-500 text-center py-8">No bookings scheduled for today</p>
             ) : (
               <div className="space-y-3">
-                {todayBookings.map((booking) => (
-                  <div key={booking.booking_id} className="p-4 bg-gray-50 rounded-xl">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-gray-800">
-                        {booking.room?.room_number}
-                      </span>
-                      <span className={`badge ${
-                        format(new Date(booking.check_in), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
-                          ? 'badge-primary' : 'badge-warning'
-                      }`}>
-                        {format(new Date(booking.check_in), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
-                          ? 'Check-in' : 'Check-out'}
-                      </span>
+                {todayBookings.map((booking) => {
+                  const checkInDate = booking.check_in_date || booking.check_in
+                  const isCheckIn = checkInDate && format(new Date(checkInDate), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
+                  return (
+                    <div key={booking.booking_id} className="p-4 bg-gray-50 rounded-xl">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-semibold text-gray-800">
+                          {booking.room?.room_number}
+                        </span>
+                        <span className={`badge ${isCheckIn ? 'badge-primary' : 'badge-warning'}`}>
+                          {isCheckIn ? 'Check-in' : 'Check-out'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {booking.user?.full_name || booking.guest_name} • {booking.number_of_guests || booking.guests || 1} guests
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-600">
-                      {booking.user?.full_name} • {booking.guests} guests
-                    </p>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </motion.div>

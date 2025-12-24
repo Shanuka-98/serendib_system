@@ -10,6 +10,7 @@ import { bookingAPI } from '../../services/api'
 import { format, parseISO, differenceInDays } from 'date-fns'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
+import { formatBookingRef } from '../../utils/helpers'
 
 const BookingDetailsPage = () => {
   const { id } = useParams()
@@ -94,7 +95,7 @@ const BookingDetailsPage = () => {
         <div className="text-center">
           <XCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
           <h2 className="text-2xl font-display font-bold text-gray-800 mb-2">Booking not found</h2>
-          <button onClick={() => navigate('/bookings')} className="btn btn-primary mt-4">
+          <button onClick={() => navigate('/my-bookings')} className="btn btn-primary mt-4">
             Back to Bookings
           </button>
         </div>
@@ -113,7 +114,7 @@ const BookingDetailsPage = () => {
           <XCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
           <h2 className="text-2xl font-display font-bold text-gray-800 mb-2">Invalid booking data</h2>
           <p className="text-gray-600 mb-4">Booking dates are missing</p>
-          <button onClick={() => navigate('/bookings')} className="btn btn-primary">
+          <button onClick={() => navigate('/my-bookings')} className="btn btn-primary">
             Back to Bookings
           </button>
         </div>
@@ -131,7 +132,7 @@ const BookingDetailsPage = () => {
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <button
-          onClick={() => navigate('/bookings')}
+          onClick={() => navigate('/my-bookings')}
           className="flex items-center text-gray-600 hover:text-gray-800 mb-6"
         >
           <ArrowLeft className="h-5 w-5 mr-2" />
@@ -143,7 +144,7 @@ const BookingDetailsPage = () => {
             <h1 className="text-4xl font-display font-bold text-gray-800 mb-2">
               Booking Details
             </h1>
-            <p className="text-gray-600">Booking #{booking.booking_id}</p>
+            <p className="text-gray-600">{formatBookingRef(booking.booking_id)}</p>
           </div>
           <div>
             {booking.status === 'cancelled' && (
@@ -197,7 +198,7 @@ const BookingDetailsPage = () => {
                   </p>
                   <div className="flex items-center text-gray-600">
                     <MapPin className="h-4 w-4 mr-2" />
-                    {booking.room?.branch?.name || 'Hotel'}
+                    {booking.room?.branch_name || booking.branch?.name || 'Hotel'}
                   </div>
                 </div>
               </div>
@@ -312,7 +313,7 @@ const BookingDetailsPage = () => {
               <div className="mb-6 p-3 bg-gray-50 rounded-xl">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Payment Status</span>
-                  {booking.payment_status === 'paid' ? (
+                  {booking.payment_status === 'completed' || booking.payment_status === 'paid' ? (
                     <span className="badge badge-success">Paid</span>
                   ) : (
                     <span className="badge badge-warning">Pending</span>

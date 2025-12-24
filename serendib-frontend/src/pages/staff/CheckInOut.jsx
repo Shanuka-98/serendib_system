@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, CheckCircle, Clock, User, Calendar, MapPin, 
-  Camera, Upload, X, Filter
+  Camera, Upload, X, Filter, RefreshCw
 } from 'lucide-react'
 import { bookingAPI } from '../../services/api'
 import { format } from 'date-fns'
 import { toast } from 'react-toastify'
+import { formatBookingRef } from '../../utils/helpers'
 
 const CheckInOutPage = () => {
   const [searchTerm, setSearchTerm] = useState('')
@@ -95,10 +96,10 @@ const CheckInOutPage = () => {
     try {
       const photo = photos[bookingId]
       await bookingAPI.checkIn(bookingId, photo ? { photo } : {})
-      toast.success('Check-in successful')
+      toast.success('Check-in successful', { toastId: `checkin-${bookingId}` })
       fetchBookings()
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to check in')
+      toast.error(error.response?.data?.message || 'Failed to check in', { toastId: `checkin-error-${bookingId}` })
     }
   }
 
@@ -137,7 +138,7 @@ const CheckInOutPage = () => {
             onClick={fetchBookings}
             className="btn btn-white flex items-center justify-center p-2 shadow-sm"
           >
-            <Clock className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
@@ -275,7 +276,7 @@ const CheckInOutPage = () => {
                            booking.status === 'checked_out' ? 'Checked Out' : booking.status}
                         </span>
                         <span className="text-xs text-gray-400 font-mono">
-                          #{booking.booking_id}
+                          {formatBookingRef(booking.booking_id)}
                         </span>
                       </div>
                       

@@ -9,6 +9,7 @@ import { motion } from 'framer-motion'
 import { CheckCircle, Calendar, Home, Loader2 } from 'lucide-react'
 import { stripeAPI, bookingAPI } from '../../services/api'
 import { toast } from 'react-toastify'
+import { formatBookingRef } from '../../utils/helpers'
 
 const BookingSuccess = () => {
   const [searchParams] = useSearchParams()
@@ -117,7 +118,7 @@ const BookingSuccess = () => {
             <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left">
               <p className="text-sm text-gray-500 mb-1">Booking Reference</p>
               <p className="text-xl font-bold text-primary-600 mb-3">
-                #{booking.booking_id}
+                {formatBookingRef(booking.booking_id)}
               </p>
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Calendar className="w-4 h-4" />

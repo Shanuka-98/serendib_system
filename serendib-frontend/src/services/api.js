@@ -61,9 +61,12 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    // Show error toast for other errors
-    const message = error.response?.data?.message || error.message || 'An error occurred'
-    toast.error(message)
+    // Show error toast only for server errors (5xx), not client errors (4xx)
+    // Components handle their own 4xx error toasts for better UX
+    if (error.response?.status >= 500) {
+      const message = error.response?.data?.message || 'Server error occurred'
+      toast.error(message)
+    }
 
     return Promise.reject(error)
   }
