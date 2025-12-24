@@ -93,7 +93,7 @@
 - **Stripe Payments**: Secure credit card processing using Payment Intents and Webhooks.
 - **Text.lk SMS Gateway**: Automated SMS notifications for booking confirmations, check-in reminders, and payment receipts.
 
-## Recent Fixes and Improvements (December 24, 2025 - Night)
+## Recent Fixes and Improvements (December 24, 2025)
 
 ### 🌟 New Features
 1.  **Email Integration (Mailtrap SMTP)**:
@@ -119,7 +119,7 @@
     -   Added web manifest for mobile "Add to Home Screen" support.
     -   Android Chrome icons (192x192, 512x512) included.
 
-### 🌟 Latest Architecture Improvements (December 24, 2025 - Night)
+### 🌟 Latest Architecture Improvements (December 24, 2025)
 1.  **Loyalty System Refactoring**:
     -   **New Database Table**: Created `LoyaltyHistory` for transaction tracking (User ID, Amount, Type, Description, Booking Ref).
     -   **Frontend**: Updated display to show formatted booking references (e.g., `SER-2025-000018`) instead of raw IDs.
@@ -146,7 +146,7 @@
 
 ---
 
-## Previous Updates (December 24, 2025 - Morning)
+## Previous Updates (December 24, 2025)
 
 ### 🌟 New Features
 1.  **Guest Footer Pages**:
