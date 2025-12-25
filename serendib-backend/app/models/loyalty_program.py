@@ -159,26 +159,26 @@ class LoyaltyProgram(db.Model):
         """Get benefits for current tier"""
         benefits = {
             'bronze': [
-                'Earn 10 points per 1000 spent',
-                'Birthday bonus points',
+                'Earn 10 points per LKR 1,000 spent on bookings',
+                'Redeem points for discounts during checkout',
                 'Exclusive member offers'
             ],
             'silver': [
-                'All Bronze benefits',
-                '5% discount on bookings',
+                'Earn 10 points per LKR 1,000 spent on bookings',
+                '5% discount on all bookings',
                 'Late checkout (subject to availability)',
                 'Priority customer support'
             ],
             'gold': [
-                'All Silver benefits',
-                '10% discount on bookings',
+                'Earn 10 points per LKR 1,000 spent on bookings',
+                '10% discount on all bookings',
                 'Free room upgrade (subject to availability)',
                 'Complimentary breakfast',
                 'Airport transfer discount'
             ],
             'platinum': [
-                'All Gold benefits',
-                '15% discount on bookings',
+                'Earn 10 points per LKR 1,000 spent on bookings',
+                '15% discount on all bookings',
                 'Guaranteed room upgrade',
                 'Free spa services',
                 'VIP concierge service',

@@ -76,7 +76,7 @@ def get_bookings():
                 query = query.filter(Booking.check_in_date >= date_from_obj)
             if date_to_obj:
                 query = query.filter(Booking.check_out_date <= date_to_obj)
-            bookings = query.order_by(Booking.booking_date.desc()).all()
+            bookings = query.order_by(Booking.booking_id.desc()).all()
     
     return success_response(data={
         'bookings': [booking.to_dict(include_relations=True) for booking in bookings],
@@ -167,6 +167,8 @@ def create_booking():
         points_discount = 0
         points_redeemed = 0
         tier_discount_percent = 0
+        promo_discount = 0
+        promo_code = None
         
         # Apply loyalty tier discount if user has loyalty program
         if current_user.role == 'guest' and current_user.loyalty_program:
@@ -186,8 +188,12 @@ def create_booking():
             else:
                 return error_response('Insufficient loyalty points', status_code=400)
         
-        # Calculate final total
-        discounted_subtotal = float(amount_details['subtotal']) - loyalty_discount - points_discount
+        # Handle promo code discount if provided
+        promo_code = data.get('promo_code')
+        promo_discount = float(data.get('promo_discount', 0))
+        
+        # Calculate final total (with all discounts)
+        discounted_subtotal = float(amount_details['subtotal']) - loyalty_discount - points_discount - promo_discount
         if discounted_subtotal < 0:
             discounted_subtotal = 0
         
@@ -205,11 +211,29 @@ def create_booking():
             total_amount=final_total,
             status='pending',
             number_of_guests=data['number_of_guests'],
-            special_requests=data.get('special_requests')
+            special_requests=data.get('special_requests'),
+            
+            # Save discount info to new columns
+            promo_code=promo_code,
+            promo_discount=promo_discount,
+            loyalty_discount=loyalty_discount,
+            loyalty_points_redeemed=points_redeemed,
+            points_discount=points_discount
         )
         
         db.session.add(booking)
         db.session.flush()
+        
+        # Create plain pending payment record (for status tracking)
+        from app.models.payment import Payment
+        pending_payment = Payment(
+            booking_id=booking.booking_id,
+            user_id=current_user.user_id,
+            amount=final_total,
+            payment_method='credit_card',
+            payment_status='pending'
+        )
+        db.session.add(pending_payment)
         
         # Create notification
         Notification.create_notification(

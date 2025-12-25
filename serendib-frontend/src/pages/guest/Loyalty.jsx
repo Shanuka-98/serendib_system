@@ -184,45 +184,6 @@ const LoyaltyPage = () => {
           </motion.div>
         </div>
 
-        {/* Redeem Points */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="glass rounded-2xl p-6 mb-6"
-        >
-          <h3 className="text-2xl font-display font-bold text-gray-800 mb-4">
-            Redeem Points
-          </h3>
-          <form onSubmit={handleRedeem} className="flex gap-4">
-            <div className="flex-1">
-              <input
-                type="number"
-                value={redeemPoints}
-                onChange={(e) => setRedeemPoints(e.target.value)}
-                className="input"
-                placeholder="Enter points to redeem"
-                min="100"
-                max={loyalty.points}
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                100 points = 100 LKR discount • Available: {loyalty.points} points
-              </p>
-              <p className="text-xs text-primary-600 mt-2 font-medium bg-primary-50 inline-block px-2 py-1 rounded">
-                💡 Tip: You can also redeem points directly during booking for instant savings!
-              </p>
-            </div>
-            <button
-              type="submit"
-              disabled={!redeemPoints || parseInt(redeemPoints) > loyalty.points}
-              className="btn btn-primary disabled:opacity-50"
-            >
-              Redeem
-            </button>
-          </form>
-        </motion.div>
-
         {/* Tiers Info */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -230,41 +191,81 @@ const LoyaltyPage = () => {
           transition={{ delay: 0.3 }}
           className="glass rounded-2xl p-6"
         >
-          <h3 className="text-2xl font-display font-bold text-gray-800 mb-6">
+          <h3 className="text-2xl font-display font-bold text-gray-800 mb-2">
             Membership Tiers
           </h3>
+          <p className="text-sm text-gray-500 mb-6">Click on a tier to see benefits</p>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {['bronze', 'silver', 'gold', 'platinum'].map((tier) => {
               const isCurrent = loyalty.tier === tier
+              const tierBenefits = {
+                bronze: [
+                  'Earn 10 points per LKR 1,000 spent',
+                  'Redeem points for discounts',
+                  'Exclusive member offers'
+                ],
+                silver: [
+                  '5% discount on all bookings',
+                  'Late checkout (subject to availability)',
+                  'Priority customer support'
+                ],
+                gold: [
+                  '10% discount on all bookings',
+                  'Free room upgrade',
+                  'Complimentary breakfast',
+                  'Airport transfer discount'
+                ],
+                platinum: [
+                  '15% discount on all bookings',
+                  'Guaranteed room upgrade',
+                  'Free spa services',
+                  'VIP concierge service',
+                  'Exclusive lounge access'
+                ]
+              }
               return (
-                <div
+                <details
                   key={tier}
-                  className={`p-4 rounded-xl border-2 ${
+                  className={`group rounded-xl border-2 overflow-hidden cursor-pointer transition-all ${
                     isCurrent
                       ? 'border-primary-500 bg-primary-50'
-                      : 'border-gray-200 bg-white'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    {tier === 'platinum' ? (
-                      <Crown className="h-5 w-5 text-purple-500" />
-                    ) : tier === 'gold' ? (
-                      <Star className="h-5 w-5 text-yellow-500" />
-                    ) : (
-                      <Award className="h-5 w-5 text-orange-500" />
+                  <summary className="p-4 list-none">
+                    <div className="flex items-center gap-2 mb-2">
+                      {tier === 'platinum' ? (
+                        <Crown className="h-5 w-5 text-purple-500" />
+                      ) : tier === 'gold' ? (
+                        <Star className="h-5 w-5 text-yellow-500" />
+                      ) : tier === 'silver' ? (
+                        <Star className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <Award className="h-5 w-5 text-orange-500" />
+                      )}
+                      <h4 className="font-bold text-gray-800 capitalize">{tier}</h4>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      {tier === 'bronze' && '0+ points'}
+                      {tier === 'silver' && '1,000+ points'}
+                      {tier === 'gold' && '3,000+ points'}
+                      {tier === 'platinum' && '5,000+ points'}
+                    </p>
+                    {isCurrent && (
+                      <span className="badge badge-primary mt-2">Current</span>
                     )}
-                    <h4 className="font-bold text-gray-800 capitalize">{tier}</h4>
+                  </summary>
+                  <div className="px-4 pb-4 pt-2 border-t border-gray-100">
+                    <ul className="space-y-1">
+                      {tierBenefits[tier].map((benefit, idx) => (
+                        <li key={idx} className="text-xs text-gray-600 flex items-start gap-1">
+                          <Sparkles className="h-3 w-3 text-primary-500 mt-0.5 flex-shrink-0" />
+                          {benefit}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <p className="text-sm text-gray-600">
-                    {tier === 'bronze' && '0+ points'}
-                    {tier === 'silver' && '1,000+ points'}
-                    {tier === 'gold' && '3,000+ points'}
-                    {tier === 'platinum' && '5,000+ points'}
-                  </p>
-                  {isCurrent && (
-                    <span className="badge badge-primary mt-2">Current</span>
-                  )}
-                </div>
+                </details>
               )
             })}
           </div>

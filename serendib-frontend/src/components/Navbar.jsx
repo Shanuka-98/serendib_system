@@ -76,6 +76,7 @@ const Navbar = () => {
         { path: '/admin/users', label: 'Users', icon: Users },
         { path: '/admin/rooms', label: 'Rooms', icon: Bed },
         { path: '/admin/branches', label: 'Branches', icon: Building2 },
+        { path: '/admin/promotions', label: 'Promotions', icon: Award },
       ]
     },
     {

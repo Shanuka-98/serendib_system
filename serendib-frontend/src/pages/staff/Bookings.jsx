@@ -157,6 +157,11 @@ const StaffBookingsPage = () => {
           <h3>Payment</h3>
           <div class="row"><span class="label">Method:</span><span class="value">${booking.payment_method || 'Cash'}</span></div>
           <div class="row"><span class="label">Status:</span><span class="value">${booking.payment_status === 'completed' ? 'Paid' : 'Pending'}</span></div>
+          
+          ${booking.loyalty_discount > 0 ? `<div class="row" style="color: #166534"><span class="label">Loyalty:</span><span class="value">-LKR ${parseFloat(booking.loyalty_discount).toLocaleString()}</span></div>` : ''}
+          ${booking.points_discount > 0 ? `<div class="row" style="color: #166534"><span class="label">Points (${booking.loyalty_points_redeemed}):</span><span class="value">-LKR ${parseFloat(booking.points_discount).toLocaleString()}</span></div>` : ''}
+          ${booking.promo_code ? `<div class="row" style="color: #166534"><span class="label">Promo (${booking.promo_code}):</span><span class="value">-LKR ${parseFloat(booking.promo_discount || 0).toLocaleString()}</span></div>` : ''}
+          
           <div class="row total"><span class="label">Total:</span><span class="value">LKR ${parseFloat(booking.total_amount || 0).toLocaleString()}</span></div>
         </div>
         
@@ -452,38 +457,38 @@ const StaffBookingsPage = () => {
                   </div>
                   
                   <div className="p-4 bg-primary-50 rounded-xl space-y-2">
-                    {(() => {
-                      if (!selectedBooking.room?.price_per_night) return null;
-                      
-                      // Robust date access
-                      const checkIn = selectedBooking.check_in_date || selectedBooking.check_in;
-                      const checkOut = selectedBooking.check_out_date || selectedBooking.check_out;
-                      
-                      if (!checkIn || !checkOut) return null;
-                      
-                      const nights = differenceInDays(parseISO(checkOut), parseISO(checkIn));
-                      const standardSubtotal = selectedBooking.room.price_per_night * nights;
-                      
-                      // Use branch tax rate if available, default to 15% (backend default)
-                      const taxRate = selectedBooking.branch?.tax_rate || 15;
-                      const taxMultiplier = 1 + (taxRate / 100);
-                      
-                      const paidSubtotal = parseFloat(selectedBooking.total_amount) / taxMultiplier;
-                      const discount = standardSubtotal - paidSubtotal;
-                      
-                      if (discount > 100) {
-                        return (
-                          <div className="flex justify-between text-sm text-green-700">
-                             <div className="flex items-center">
-                                <Gift className="h-4 w-4 mr-2" />
-                                <span>Loyalty Savings</span>
-                             </div>
-                             <span>-{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR', minimumFractionDigits: 0 }).format(discount)}</span>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
+                    {/* Loyalty Discount */}
+                    {selectedBooking.loyalty_discount > 0 && (
+                      <div className="flex justify-between text-sm text-green-700">
+                        <div className="flex items-center">
+                           <Gift className="h-4 w-4 mr-2" />
+                           <span>Loyalty Savings</span>
+                        </div>
+                        <span>-{formatPrice(selectedBooking.loyalty_discount)}</span>
+                      </div>
+                    )}
+
+                    {/* Points Redeemed */}
+                    {selectedBooking.points_discount > 0 && (
+                      <div className="flex justify-between text-sm text-green-700">
+                        <div className="flex items-center">
+                           <Gift className="h-4 w-4 mr-2" />
+                           <span>Points Redeemed ({selectedBooking.loyalty_points_redeemed} pts)</span>
+                        </div>
+                        <span>-{formatPrice(selectedBooking.points_discount)}</span>
+                      </div>
+                    )}
+
+                    {/* Promo Code Discount */}
+                    {selectedBooking.promo_code && (
+                      <div className="flex justify-between text-sm text-green-700">
+                        <div className="flex items-center">
+                          <CreditCard className="h-4 w-4 mr-2" />
+                          <span>Promo: {selectedBooking.promo_code}</span>
+                        </div>
+                        <span>-{formatPrice(selectedBooking.promo_discount || 0)}</span>
+                      </div>
+                    )}
 
                     <div className="flex justify-between items-center">
                       <span className="text-gray-700">Total Amount</span>

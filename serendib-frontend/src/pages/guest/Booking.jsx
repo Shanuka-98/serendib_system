@@ -4,9 +4,9 @@ import { motion } from 'framer-motion'
 import {
   Calendar, Users, CreditCard, Shield, CheckCircle,
   ArrowLeft, Bed, Wifi, Car, Coffee, MapPin,
-  Star, Info, AlertCircle, Gift
+  Star, Info, AlertCircle, Gift, Tag, X
 } from 'lucide-react'
-import { roomAPI, bookingAPI, paymentAPI, stripeAPI, loyaltyAPI } from '../../services/api'
+import { roomAPI, bookingAPI, paymentAPI, stripeAPI, loyaltyAPI, promotionsAPI } from '../../services/api'
 import { format, differenceInDays, parseISO } from 'date-fns'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
@@ -110,6 +110,13 @@ const BookingPage = () => {
   const [loyaltyDiscount, setLoyaltyDiscount] = useState(0)
   const [pointsDiscount, setPointsDiscount] = useState(0)
 
+  // Promo code state
+  const [promoCode, setPromoCode] = useState('')
+  const [promoDiscount, setPromoDiscount] = useState(0)
+  const [appliedPromo, setAppliedPromo] = useState(null)
+  const [promoLoading, setPromoLoading] = useState(false)
+  const [promoError, setPromoError] = useState('')
+
   useEffect(() => {
     if (!roomId || !checkIn || !checkOut) {
       toast.error('Missing booking information. Please search for rooms again.')
@@ -125,7 +132,7 @@ const BookingPage = () => {
     if (room && checkIn && checkOut) {
       calculatePricing()
     }
-  }, [room, checkIn, checkOut, loyalty, pointsToRedeem])
+  }, [room, checkIn, checkOut, loyalty, pointsToRedeem, promoDiscount])
   
   const fetchLoyaltyProfile = async () => {
     try {
@@ -172,7 +179,7 @@ const BookingPage = () => {
     const ptsDiscount = Math.min(pointsToRedeem, loyalty?.points || 0)
     setPointsDiscount(ptsDiscount)
     
-    const discountedSubtotal = subtotal - tierDiscount - ptsDiscount
+    const discountedSubtotal = subtotal - tierDiscount - ptsDiscount - promoDiscount
     const taxes = discountedSubtotal * 0.12 // 12% tax
     const total = discountedSubtotal + taxes
     
@@ -183,6 +190,7 @@ const BookingPage = () => {
       tierPercent,
       tierDiscount,
       pointsDiscount: ptsDiscount,
+      promoDiscount,
       pointsToEarn: Math.floor(total / 1000) * 10,
       taxes,
       total: Math.max(0, total)
@@ -195,6 +203,49 @@ const BookingPage = () => {
       ...prev,
       [name]: value
     }))
+  }
+
+  const handleApplyPromoCode = async () => {
+    if (!promoCode.trim()) {
+      setPromoError('Please enter a promo code')
+      return
+    }
+    
+    setPromoLoading(true)
+    setPromoError('')
+    
+    try {
+      const response = await promotionsAPI.validatePromoCode({
+        promo_code: promoCode.toUpperCase(),
+        booking_amount: bookingSummary.subtotal,
+        branch_id: room?.branch_id
+      })
+      
+      const result = response.data.data
+      
+      if (result.valid) {
+        setPromoDiscount(result.discount)
+        setAppliedPromo(result.promotion)
+        toast.success(`Promo code applied! You save ${formatPrice(result.discount)}`)
+      } else {
+        setPromoError(result.message || 'Invalid promo code')
+        setPromoDiscount(0)
+        setAppliedPromo(null)
+      }
+    } catch (error) {
+      setPromoError(error.response?.data?.message || 'Failed to validate promo code')
+      setPromoDiscount(0)
+      setAppliedPromo(null)
+    } finally {
+      setPromoLoading(false)
+    }
+  }
+
+  const removePromoCode = () => {
+    setPromoCode('')
+    setPromoDiscount(0)
+    setAppliedPromo(null)
+    setPromoError('')
   }
 
   const handleSubmit = async (e) => {
@@ -215,7 +266,9 @@ const BookingPage = () => {
         check_out_date: checkOut,
         number_of_guests: parseInt(guests),
         special_requests: formData.special_requests || undefined,
-        redeem_points: pointsToRedeem > 0 ? pointsToRedeem : undefined
+        redeem_points: pointsToRedeem > 0 ? pointsToRedeem : undefined,
+        promo_code: appliedPromo ? promoCode.toUpperCase() : undefined,
+        promo_discount: promoDiscount > 0 ? promoDiscount : undefined
       }
 
       // Create booking
@@ -226,7 +279,9 @@ const BookingPage = () => {
       if (formData.payment_method === 'credit_card') {
         // Redirect to Stripe Checkout for card payments
         const checkoutResponse = await stripeAPI.createCheckoutSession({
-          booking_id: booking.booking_id
+          booking_id: booking.booking_id,
+          promo_code: appliedPromo ? promoCode.toUpperCase() : undefined,
+          promo_discount: promoDiscount > 0 ? promoDiscount : undefined
         })
         
         // Redirect to Stripe hosted checkout page
@@ -509,6 +564,61 @@ const BookingPage = () => {
               </motion.div>
             )}
 
+            {/* Promo Code Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.17 }}
+              className="glass rounded-2xl p-6"
+            >
+              <h2 className="text-xl font-display font-bold text-gray-800 mb-4 flex items-center">
+                <Tag className="h-5 w-5 mr-2 text-primary-500" />
+                Promo Code
+              </h2>
+              
+              {appliedPromo ? (
+                <div className="flex items-center justify-between p-4 bg-mint-50 rounded-xl border border-mint-200">
+                  <div>
+                    <p className="font-semibold text-mint-700">{appliedPromo.title}</p>
+                    <p className="text-sm text-mint-600">
+                      Code: <span className="font-mono font-bold">{promoCode.toUpperCase()}</span> ({appliedPromo.discount_percentage}% off)
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-bold text-mint-700">-{formatPrice(promoDiscount)}</span>
+                    <button
+                      onClick={removePromoCode}
+                      className="text-gray-500 hover:text-red-500 p-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                      placeholder="Enter promo code"
+                      className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 font-mono uppercase"
+                    />
+                    <button
+                      onClick={handleApplyPromoCode}
+                      disabled={promoLoading}
+                      className="btn btn-secondary px-6"
+                    >
+                      {promoLoading ? 'Checking...' : 'Apply'}
+                    </button>
+                  </div>
+                  {promoError && (
+                    <p className="text-red-500 text-sm mt-2">{promoError}</p>
+                  )}
+                </div>
+              )}
+            </motion.div>
+
             {/* Payment Information */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -585,6 +695,13 @@ const BookingPage = () => {
                   <div className="flex justify-between text-green-600">
                     <span>Points Redeemed</span>
                     <span className="font-medium">-{formatPrice(bookingSummary.pointsDiscount)}</span>
+                  </div>
+                )}
+                
+                {bookingSummary.promoDiscount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Promo Discount</span>
+                    <span className="font-medium">-{formatPrice(bookingSummary.promoDiscount)}</span>
                   </div>
                 )}
                 

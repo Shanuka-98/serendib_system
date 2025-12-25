@@ -42,6 +42,7 @@ import AnalyticsPage from './pages/admin/Analytics'
 import AuditLogsPage from './pages/admin/AuditLogs'
 import AdminProfile from './pages/admin/Profile'
 import AdminSettings from './pages/admin/Settings'
+import PromotionsManagement from './pages/admin/PromotionsManagement'
 
 function App() {
   return (
@@ -83,6 +84,7 @@ function App() {
           <Route path="/admin/users" element={<ProtectedRoute roles={['admin']}><UserManagement /></ProtectedRoute>} />
           <Route path="/admin/rooms" element={<ProtectedRoute roles={['admin']}><RoomManagement /></ProtectedRoute>} />
           <Route path="/admin/branches" element={<ProtectedRoute roles={['admin']}><BranchManagement /></ProtectedRoute>} />
+          <Route path="/admin/promotions" element={<ProtectedRoute roles={['admin']}><PromotionsManagement /></ProtectedRoute>} />
           <Route path="/admin/analytics" element={<ProtectedRoute roles={['admin']}><AnalyticsPage /></ProtectedRoute>} />
           <Route path="/admin/audit-logs" element={<ProtectedRoute roles={['admin']}><AuditLogsPage /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute roles={['admin']}><AdminSettings /></ProtectedRoute>} />

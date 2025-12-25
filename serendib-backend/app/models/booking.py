@@ -21,6 +21,14 @@ class Booking(db.Model):
         db.Enum('pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled', name='booking_status'),
         default='pending'
     )
+    
+    # Discount & Promo Tracking
+    promo_code = db.Column(db.String(20))
+    promo_discount = db.Column(db.Numeric(10, 2), default=0)
+    loyalty_points_redeemed = db.Column(db.Integer, default=0)
+    points_discount = db.Column(db.Numeric(10, 2), default=0)
+    loyalty_discount = db.Column(db.Numeric(10, 2), default=0)
+    
     booking_date = db.Column(db.DateTime, default=datetime.utcnow)
     special_requests = db.Column(db.Text)
     number_of_guests = db.Column(db.Integer, default=1)
@@ -64,7 +72,14 @@ class Booking(db.Model):
             'cancelled_at': self.cancelled_at.isoformat() if self.cancelled_at else None,
             'checked_in_at': self.checked_in_at.isoformat() if self.checked_in_at else None,
             'checked_out_at': self.checked_out_at.isoformat() if self.checked_out_at else None,
-            'nights': self.calculate_nights()
+            'nights': self.calculate_nights(),
+            
+            # Promo & Loyalty info
+            'promo_code': self.promo_code,
+            'promo_discount': float(self.promo_discount) if self.promo_discount else 0,
+            'loyalty_points_redeemed': self.loyalty_points_redeemed,
+            'points_discount': float(self.points_discount) if self.points_discount else 0,
+            'loyalty_discount': float(self.loyalty_discount) if self.loyalty_discount else 0
         }
         
         if include_relations:
@@ -84,6 +99,7 @@ class Booking(db.Model):
             if payment:
                 data['payment_status'] = payment.payment_status
                 data['payment_method'] = payment.payment_method
+                data['payment_details'] = payment.payment_details
         
         return data
     
@@ -210,7 +226,7 @@ class Booking(db.Model):
         if status:
             query = query.filter_by(status=status)
         
-        return query.order_by(Booking.booking_date.desc()).all()
+        return query.order_by(Booking.booking_id.desc()).all()
     
     @staticmethod
     def get_branch_bookings(branch_id, status=None, date_from=None, date_to=None):
@@ -226,7 +242,7 @@ class Booking(db.Model):
         if date_to:
             query = query.filter(Booking.check_out_date <= date_to)
         
-        return query.order_by(Booking.check_in_date.desc()).all()
+        return query.order_by(Booking.booking_id.desc()).all()
     
     @staticmethod
     def get_upcoming_bookings(days=7):

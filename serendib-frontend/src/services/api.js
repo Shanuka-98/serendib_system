@@ -198,3 +198,11 @@ export const stripeAPI = {
   createCheckoutSession: (data) => api.post('/stripe/create-checkout-session', data),
 }
 
+// Promotions API - promo codes and discounts
+export const promotionsAPI = {
+  getPromotions: (params) => api.get('/promotions', { params }),
+  createPromotion: (data) => api.post('/promotions', data),
+  updatePromotion: (id, data) => api.put(`/promotions/${id}`, data),
+  deletePromotion: (id) => api.delete(`/promotions/${id}`),
+  validatePromoCode: (data) => api.post('/promotions/validate', data),
+}

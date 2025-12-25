@@ -149,11 +149,18 @@ const BookingDetailsPage = () => {
         {/* Header */}
         <button
           onClick={() => navigate('/my-bookings')}
-          className="flex items-center text-gray-600 hover:text-gray-800 mb-6"
+          className="flex items-center text-gray-600 hover:text-gray-800 mb-6 print:hidden"
         >
           <ArrowLeft className="h-5 w-5 mr-2" />
           Back to Bookings
         </button>
+
+        {/* Print Only Header */}
+        <div className="hidden print:block mb-8 text-center border-b pb-6">
+           <h1 className="text-3xl font-serif font-bold text-gray-900 mb-2">Serendib Hotels</h1>
+           <p className="text-gray-600">Official Booking Receipt</p>
+           <p className="text-sm text-gray-500 mt-1">Generated on {format(new Date(), 'MMM dd, yyyy')}</p>
+        </div>
 
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -178,9 +185,9 @@ const BookingDetailsPage = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:block">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 print:mb-8">
             {/* Room Information */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -313,34 +320,38 @@ const BookingDetailsPage = () => {
                   <span>{formatPrice(booking.room?.price_per_night ? booking.room.price_per_night * nights : (booking.total_amount || 0) / 1.12)}</span>
                 </div>
                 
-                {/* Calculate loyalty savings */}
-                {(() => {
-                  if (!booking.room?.price_per_night) return null;
-                  
-                  const standardSubtotal = booking.room.price_per_night * nights;
-                  
-                  // Use branch tax rate if available, default to 15% (backend default)
-                  const taxRate = booking.branch?.tax_rate || 15;
-                  const taxMultiplier = 1 + (taxRate / 100);
-                  
-                  // Back-calculate subtotal paid (Total = Subtotal + Tax => Total = Subtotal * Multiplier)
-                  const paidSubtotal = parseFloat(booking.total_amount) / taxMultiplier;
-                  const discount = standardSubtotal - paidSubtotal;
-                  
-                  // Only show if discount is significant (> 100 LKR to ignore rounding/small variances)
-                  if (discount > 100) {
-                    return (
-                      <div className="flex justify-between text-green-600 font-medium">
-                        <div className="flex items-center">
-                           <Gift className="h-4 w-4 mr-2" />
-                           <span>Loyalty Savings</span>
-                        </div>
-                        <span>-{formatPrice(discount)}</span>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
+                {/* Loyalty Discount */}
+                {booking.loyalty_discount > 0 && (
+                  <div className="flex justify-between text-green-600 font-medium">
+                    <div className="flex items-center">
+                      <Gift className="h-4 w-4 mr-2" />
+                      <span>Loyalty Savings</span>
+                    </div>
+                    <span>-{formatPrice(booking.loyalty_discount)}</span>
+                  </div>
+                )}
+
+                {/* Points Redeemed */}
+                {booking.points_discount > 0 && (
+                  <div className="flex justify-between text-green-600 font-medium">
+                    <div className="flex items-center">
+                      <Gift className="h-4 w-4 mr-2" />
+                      <span>Points Redeemed ({booking.loyalty_points_redeemed} pts)</span>
+                    </div>
+                    <span>-{formatPrice(booking.points_discount)}</span>
+                  </div>
+                )}
+
+                {/* Promo Code Discount */}
+                {booking.promo_code && (
+                  <div className="flex justify-between text-green-600 font-medium">
+                    <div className="flex items-center">
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      <span>Promo: {booking.promo_code}</span>
+                    </div>
+                    <span>-{formatPrice(booking.promo_discount || 0)}</span>
+                  </div>
+                )}
 
                 <div className="flex justify-between text-gray-600">
                   <span>Taxes & Fees</span>
@@ -367,7 +378,7 @@ const BookingDetailsPage = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 print:hidden">
                 {canCancel && (
                   <button
                     onClick={() => setShowCancelModal(true)}

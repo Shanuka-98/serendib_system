@@ -123,6 +123,10 @@ def create_checkout_session():
         # Amount in cents
         amount = int(float(booking.total_amount) * 100)
         
+        # Get promo info from request
+        promo_code = data.get('promo_code')
+        promo_discount = data.get('promo_discount', 0)
+        
         # Create Stripe Checkout session
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=['card'],
@@ -144,6 +148,8 @@ def create_checkout_session():
             metadata={
                 'booking_id': str(booking.booking_id),
                 'user_id': str(user_id),
+                'promo_code': promo_code or '',
+                'promo_discount': str(promo_discount) if promo_discount else '0',
             },
         )
         
@@ -206,18 +212,30 @@ def confirm_payment():
         if not booking or booking.user_id != user_id:
             return error_response('Booking not found', status_code=404)
         
-        # Create payment record
-        payment = Payment(
+        # Check for existing pending payment
+        payment = Payment.query.filter_by(
             booking_id=booking.booking_id,
-            user_id=user_id,
-            amount=amount,
-            payment_method='credit_card',
-            payment_status='completed',
-            transaction_id=payment_intent_id,
-            payment_date=datetime.utcnow(),
-        )
-        
-        db.session.add(payment)
+            payment_status='pending'
+        ).first()
+
+        if payment:
+            # Update existing pending payment
+            payment.payment_status = 'completed'
+            payment.transaction_id = payment_intent_id
+            payment.payment_date = datetime.utcnow()
+            payment.payment_method = 'credit_card' 
+        else:
+            # Create new payment if no pending one found
+            payment = Payment(
+                booking_id=booking.booking_id,
+                user_id=user_id,
+                amount=amount,
+                payment_method='credit_card',
+                payment_status='completed',
+                transaction_id=payment_intent_id,
+                payment_date=datetime.utcnow()
+            )
+            db.session.add(payment)
         
         # Update booking status
         booking.status = 'confirmed'
@@ -228,7 +246,7 @@ def confirm_payment():
             action='PAYMENT',
             table_name='Payment',
             record_id=payment.payment_id if payment.payment_id else 0,
-            new_values={'amount': payment.amount, 'booking_id': booking_id},
+            new_values={'amount': float(payment.amount), 'booking_id': booking_id},
             ip_address=get_ip_address(),
             user_agent=request.headers.get('User-Agent')
         )

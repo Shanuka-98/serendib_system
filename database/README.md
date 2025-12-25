@@ -129,6 +129,11 @@ erDiagram
         datetime cancelled_at
         datetime checked_in_at
         datetime checked_out_at
+        string promo_code
+        decimal promo_discount
+        int loyalty_points_redeemed
+        decimal points_discount
+        decimal loyalty_discount
     }
 
     Payment {
@@ -299,6 +304,19 @@ ALTER TABLE Notification
 MODIFY COLUMN notification_type ENUM('booking', 'payment', 'service', 'promotion', 'system', 'loyalty', 'sms') NOT NULL;
 ```
 New installations using `schema.sql` already include this.
+
+### Booking Schema Update (Dec 2025)
+Added columns for direct promo code and loyalty tracking in bookings:
+```sql
+ALTER TABLE Booking ADD COLUMN promo_code VARCHAR(20);
+ALTER TABLE Booking ADD COLUMN promo_discount DECIMAL(10,2) DEFAULT 0.00;
+ALTER TABLE Booking ADD COLUMN loyalty_points_redeemed INT DEFAULT 0;
+ALTER TABLE Booking ADD COLUMN points_discount DECIMAL(10,2) DEFAULT 0.00;
+ALTER TABLE Booking ADD COLUMN loyalty_discount DECIMAL(10,2) DEFAULT 0.00;
+```
+New installations using `schema.sql` already include this.
+> [!IMPORTANT]
+> If you experience any database synchronization issues or errors after these updates, the cleanest fix is to **delete your local database** and re-import `schema.sql` (or let the backend recreate it).
 
 ## Notes
 

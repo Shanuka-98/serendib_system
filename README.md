@@ -101,6 +101,13 @@
     -   Global SMS toggle to enable/disable all SMS notifications.
     -   Individual toggles for Booking, Payment, and Cancellation SMS.
     -   SMS messages logged to Notification table for tracking.
+2.  **Promotions & Loyalty System**:
+    -   **Promo Codes**: Full support for percentage-based discounts (`SUMMER20`) stored directly in `Booking` table.
+    -   **Loyalty Redemption**: Guests can redeem points for cash discounts.
+    -   **Detailed Receipts**: Guest and Staff print layouts now include itemized savings (Promo, Loyalty, Points).
+3.  **Booking Management Upgrades**:
+    -   **Smart Sorting**: All booking lists (Guest, Staff, Admin) now sort by **Latest Created** first.
+    -   **Database**: Schema optimized to store discount data (no longer reliant on payment metadata).
 
 ---
 
