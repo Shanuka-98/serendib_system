@@ -46,7 +46,7 @@
 
 ---
 
-### **Frontend (React + Vite)** - 98% Complete
+### **Frontend (React + Vite)** - 99% Complete
 
 #### UI/UX Design
 - **Modern Aesthetic**: Glass-morphism, gradients, and a clean color palette (Sky Blue, Peach, Mint, Lavender).
@@ -75,7 +75,7 @@
     - **Fixed**: Crash resolved (`requests.filter` error).
     - Create, view, and update service requests.
 
-**3. Admin Dashboard (95% - Recently Polished)**
+**3. Admin Dashboard (99% - Recently Polished)**
 - **Dashboard**: High-level metrics (Revenue, Occupancy, active users).
 - **Branch Management**:
     - **Fixed**: Update functionality and API integration.
