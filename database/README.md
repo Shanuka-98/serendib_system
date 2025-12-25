@@ -196,7 +196,7 @@ erDiagram
         int notification_id PK
         int user_id FK
         text message
-        enum notification_type "booking|payment|service|promotion|system|loyalty"
+        enum notification_type "booking|payment|service|promotion|system|loyalty|sms"
         bool is_read
         datetime sent_at
         int related_id
@@ -289,6 +289,16 @@ mysqldump -u root -p serendib_hotels > backup.sql
 # Restore
 mysql -u root -p serendib_hotels < backup.sql
 ```
+
+## Migration Notes
+
+### SMS Notification Support (Dec 2025)
+If you have an existing database, run this to add SMS support:
+```sql
+ALTER TABLE Notification 
+MODIFY COLUMN notification_type ENUM('booking', 'payment', 'service', 'promotion', 'system', 'loyalty', 'sms') NOT NULL;
+```
+New installations using `schema.sql` already include this.
 
 ## Notes
 

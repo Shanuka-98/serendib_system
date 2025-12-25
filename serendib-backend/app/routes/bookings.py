@@ -431,6 +431,13 @@ def cancel_booking(booking_id):
         related_id=booking.booking_id
     )
     
+    # Send cancellation SMS (non-blocking)
+    try:
+        from app.services.sms_service import send_booking_cancelled
+        send_booking_cancelled(booking, booking.user)
+    except Exception as sms_error:
+        print(f"SMS cancellation failed: {sms_error}")
+    
     # Log action
     AuditLog.log_action(
         user_id=current_user.user_id,

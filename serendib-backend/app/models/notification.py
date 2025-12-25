@@ -14,7 +14,7 @@ class Notification(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('User.user_id', ondelete='CASCADE'), nullable=False)
     message = db.Column(db.Text, nullable=False)
     notification_type = db.Column(
-        db.Enum('booking', 'payment', 'service', 'promotion', 'system', 'loyalty', name='notification_type'),
+        db.Enum('booking', 'payment', 'service', 'promotion', 'system', 'loyalty', 'sms', name='notification_type'),
         nullable=False
     )
     is_read = db.Column(db.Boolean, default=False)

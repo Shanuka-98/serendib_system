@@ -525,3 +525,94 @@ def get_loyalty_stats():
         'total_lifetime_points': int(total_lifetime_points)
     })
 
+
+@admin_bp.route('/settings', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_settings():
+    """
+    Get admin settings including SMS toggles and stats
+    """
+    from app.services.sms_service import get_sms_count
+    
+    # Get SMS toggle settings
+    sms_enabled = PropertyConfig.get_config(None, 'sms_enabled', 'true')
+    sms_booking_enabled = PropertyConfig.get_config(None, 'sms_booking_enabled', 'true')
+    sms_payment_enabled = PropertyConfig.get_config(None, 'sms_payment_enabled', 'true')
+    sms_cancelled_enabled = PropertyConfig.get_config(None, 'sms_cancelled_enabled', 'true')
+    
+    return success_response(data={
+        'sms': {
+            'enabled': sms_enabled == 'true',
+            'booking_enabled': sms_booking_enabled == 'true',
+            'payment_enabled': sms_payment_enabled == 'true',
+            'cancelled_enabled': sms_cancelled_enabled == 'true',
+            'total_sent': get_sms_count()
+        }
+    })
+
+
+@admin_bp.route('/settings', methods=['PUT'])
+@jwt_required()
+@admin_required
+def update_settings():
+    """
+    Update admin settings
+    
+    Request Body:
+        sms_enabled: Global SMS toggle
+        sms_booking_enabled: Booking confirmation SMS toggle
+        sms_payment_enabled: Payment confirmation SMS toggle
+        sms_cancelled_enabled: Cancellation SMS toggle
+    """
+    data = request.get_json()
+    current_user = get_current_user()
+    
+    try:
+        # Update SMS settings
+        if 'sms_enabled' in data:
+            PropertyConfig.set_config(
+                None, 'sms_enabled', 
+                'true' if data['sms_enabled'] else 'false',
+                'Global SMS notifications toggle'
+            )
+        
+        if 'sms_booking_enabled' in data:
+            PropertyConfig.set_config(
+                None, 'sms_booking_enabled',
+                'true' if data['sms_booking_enabled'] else 'false',
+                'Booking confirmation SMS toggle'
+            )
+        
+        if 'sms_payment_enabled' in data:
+            PropertyConfig.set_config(
+                None, 'sms_payment_enabled',
+                'true' if data['sms_payment_enabled'] else 'false',
+                'Payment confirmation SMS toggle'
+            )
+        
+        if 'sms_cancelled_enabled' in data:
+            PropertyConfig.set_config(
+                None, 'sms_cancelled_enabled',
+                'true' if data['sms_cancelled_enabled'] else 'false',
+                'Booking cancellation SMS toggle'
+            )
+        
+        # Log the settings change
+        AuditLog.log_action(
+            user_id=current_user.user_id,
+            action='UPDATE_SETTINGS',
+            table_name='PropertyConfig',
+            record_id=0,
+            new_values=data,
+            ip_address=get_ip_address(),
+            user_agent=request.headers.get('User-Agent')
+        )
+        
+        return success_response(message='Settings updated successfully')
+        
+    except Exception as e:
+        db.session.rollback()
+        return error_response(f'Failed to update settings: {str(e)}', status_code=500)
+
+

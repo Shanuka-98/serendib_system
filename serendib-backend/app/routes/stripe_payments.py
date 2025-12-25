@@ -235,10 +235,10 @@ def confirm_payment():
         
         db.session.commit()
         
-        # Send SMS confirmation (non-blocking)
+        # Send booking confirmation SMS (non-blocking)
         try:
-            from app.services.sms_service import send_payment_confirmation
-            send_payment_confirmation(booking, payment.amount)
+            from app.services.sms_service import send_booking_confirmation
+            send_booking_confirmation(booking, booking.user, is_paid=True)
         except Exception as sms_error:
             print(f"SMS notification failed: {sms_error}")
         

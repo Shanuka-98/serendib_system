@@ -176,6 +176,8 @@ export const adminAPI = {
   getAuditLogs: (params) => api.get('/admin/audit-logs', { params }),
   generateReports: (params) => api.get('/admin/reports', { params }),
   getLoyaltyStats: () => api.get('/admin/loyalty-stats'),
+  getSettings: () => api.get('/admin/settings'),
+  updateSettings: (data) => api.put('/admin/settings', data),
 }
 
 // Analytics API - revenue, occupancy, and booking trends

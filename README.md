@@ -1,6 +1,6 @@
 # Serendib Smart Hotel Management System - Complete Project Documentation
 
-**Last Updated:** December 24, 2025  
+**Last Updated:** December 25, 2025  
 **Overall Progress:** **98% Complete** - All Core Features Fully Functional & Polished
 
 > **Note:** This is the comprehensive project documentation. All project status, information, and recent updates are consolidated here.
@@ -91,9 +91,20 @@
 
 #### Third-Party Integrations
 - **Stripe Payments**: Secure credit card processing using Payment Intents and Webhooks.
-- **Text.lk SMS Gateway**: Automated SMS notifications for booking confirmations, check-in reminders, and payment receipts.
+- **Text.lk SMS Gateway**: SMS notifications for bookings, payments, and cancellations with admin toggle controls.
 
-## Recent Fixes and Improvements (December 24, 2025)
+## Recent Fixes and Improvements (December 25, 2025)
+
+### 🌟 New Features
+1.  **SMS Admin Settings**:
+    -   New Settings page in Admin profile dropdown.
+    -   Global SMS toggle to enable/disable all SMS notifications.
+    -   Individual toggles for Booking, Payment, and Cancellation SMS.
+    -   SMS messages logged to Notification table for tracking.
+
+---
+
+## Previous Updates (December 24, 2025)
 
 ### 🌟 New Features
 1.  **Email Integration (Mailtrap SMTP)**:
@@ -218,7 +229,7 @@
     ```bash
     cd serendib-backend
     python -m venv venv             # Create virtual environment
-    venv\Scripts\activate           # Activate (Windows)
+    venv\Scripts\activate           # Activate (Windows CMD)
     pip install -r requirements.txt # Install dependencies
     python run.py
     ```

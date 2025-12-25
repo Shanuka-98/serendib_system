@@ -102,6 +102,13 @@ def process_payment():
         
         db.session.commit()
         
+        # Send payment confirmation SMS (non-blocking)
+        try:
+            from app.services.sms_service import send_payment_confirmation
+            send_payment_confirmation(booking, payment.amount)
+        except Exception as sms_error:
+            print(f"SMS payment notification failed: {sms_error}")
+        
         return success_response(
             data={
                 'payment': payment.to_dict(include_relations=True),

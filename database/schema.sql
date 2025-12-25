@@ -163,7 +163,7 @@ CREATE TABLE Notification (
     notification_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     message TEXT NOT NULL,
-    notification_type ENUM('booking', 'payment', 'service', 'promotion', 'system', 'loyalty') NOT NULL,
+    notification_type ENUM('booking', 'payment', 'service', 'promotion', 'system', 'loyalty', 'sms') NOT NULL,
     is_read BOOLEAN DEFAULT FALSE,
     sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     related_id INT,

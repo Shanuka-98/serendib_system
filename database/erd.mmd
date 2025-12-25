@@ -149,7 +149,7 @@ erDiagram
         int notification_id PK
         int user_id FK
         text message
-        enum notification_type "booking|payment|service|promotion|system|loyalty"
+        enum notification_type "booking|payment|service|promotion|system|loyalty|sms"
         bool is_read
         datetime sent_at
         int related_id
