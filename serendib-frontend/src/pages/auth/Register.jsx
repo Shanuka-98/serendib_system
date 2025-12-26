@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Mail, Lock, User, Phone, ArrowRight, Hotel } from 'lucide-react'
+import { Mail, Lock, User, Phone, ArrowRight, Hotel, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 const RegisterPage = () => {
@@ -11,6 +11,7 @@ const RegisterPage = () => {
     full_name: '',
     phone: ''
   })
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const { register } = useAuth()
   const navigate = useNavigate()
@@ -121,15 +122,26 @@ const RegisterPage = () => {
               <div className="relative">
                 <Lock className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="input pl-12"
+                  className="input pl-12 pr-12"
                   placeholder="••••••••"
                   required
                   minLength={6}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
               </div>
               <p className="text-xs text-gray-500 mt-1">Must be at least 6 characters</p>
             </div>
