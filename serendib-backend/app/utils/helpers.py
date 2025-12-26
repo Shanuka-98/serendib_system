@@ -176,3 +176,11 @@ def validate_required_fields(data, required_fields):
     
     return True, None
 
+
+def get_current_user():
+    """Get the current authenticated user from JWT identity"""
+    user_id = get_jwt_identity()
+    if not user_id:
+        return None
+    return User.query.get(user_id)
+

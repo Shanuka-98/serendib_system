@@ -206,3 +206,12 @@ export const promotionsAPI = {
   deletePromotion: (id) => api.delete(`/promotions/${id}`),
   validatePromoCode: (data) => api.post('/promotions/validate', data),
 }
+
+// Shifts API - staff scheduling and shift management
+export const shiftsAPI = {
+  getShifts: (params) => api.get('/shifts', { params }),
+  createShift: (data) => api.post('/shifts', data),
+  updateShift: (id, data) => api.put(`/shifts/${id}`, data),
+  deleteShift: (id) => api.delete(`/shifts/${id}`),
+  getStaffForScheduling: (params) => api.get('/shifts/staff', { params }),
+}

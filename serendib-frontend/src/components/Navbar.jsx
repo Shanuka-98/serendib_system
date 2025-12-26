@@ -5,7 +5,7 @@ import {
   Menu, X, User, LogOut, Calendar, Bed,
   Settings, BarChart3, Users, Building2, FileText,
   CheckCircle, AlertCircle, Award, Search, ChevronDown, 
-  LayoutDashboard, Cog, ConciergeBell
+  LayoutDashboard, Cog, ConciergeBell, Clock
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
@@ -54,6 +54,7 @@ const Navbar = () => {
         { path: '/staff/check-in-out', label: 'Check-in/Out', icon: CheckCircle },
         { path: '/staff/bookings', label: 'All Bookings', icon: Calendar },
         { path: '/staff/room-status', label: 'Room Status', icon: Bed },
+        { path: '/staff/schedule', label: 'Schedule', icon: Clock },
       ]
     },
     {
@@ -77,6 +78,7 @@ const Navbar = () => {
         { path: '/admin/rooms', label: 'Rooms', icon: Bed },
         { path: '/admin/branches', label: 'Branches', icon: Building2 },
         { path: '/admin/promotions', label: 'Promotions', icon: Award },
+        { path: '/staff/schedule', label: 'Staff Schedule', icon: Clock },
       ]
     },
     {

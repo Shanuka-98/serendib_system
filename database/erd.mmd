@@ -14,6 +14,9 @@ erDiagram
     Branch ||--o{ Staff : "employs"
     Branch ||--o{ Promotion : "offers"
     Branch ||--o{ PropertyConfig : "configures"
+    Branch ||--o{ Shift : "schedules"
+
+    User ||--o{ Shift : "assigned_to"
 
     Room ||--o{ Booking : "reserved_in"
     
@@ -201,4 +204,16 @@ erDiagram
         datetime timestamp
         string ip_address
         text user_agent
+    }
+
+    Shift {
+        int shift_id PK
+        int user_id FK
+        int branch_id FK
+        datetime start_time
+        datetime end_time
+        string role
+        text notes
+        datetime created_at
+        datetime updated_at
     }

@@ -32,6 +32,7 @@ import CheckInOutPage from './pages/staff/CheckInOut'
 import ServiceManagementPage from './pages/staff/ServiceManagement'
 import RoomStatusPage from './pages/staff/RoomStatus'
 import StaffBookingsPage from './pages/staff/Bookings'
+import StaffSchedulePage from './pages/staff/StaffSchedule'
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard'
@@ -78,6 +79,7 @@ function App() {
           <Route path="/staff/check-in-out" element={<ProtectedRoute roles={['staff', 'admin']}><CheckInOutPage /></ProtectedRoute>} />
           <Route path="/staff/services" element={<ProtectedRoute roles={['staff', 'admin']}><ServiceManagementPage /></ProtectedRoute>} />
           <Route path="/staff/room-status" element={<ProtectedRoute roles={['staff', 'admin']}><RoomStatusPage /></ProtectedRoute>} />
+          <Route path="/staff/schedule" element={<ProtectedRoute roles={['staff', 'admin']}><StaffSchedulePage /></ProtectedRoute>} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />

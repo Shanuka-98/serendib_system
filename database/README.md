@@ -42,6 +42,8 @@ python fix_passwords.py
 | **AuditLog** | Audit trail |
 | **PropertyConfig** | Branch configs |
 | **Promotion** | Discount codes |
+| **Shift** | Staff schedule assignments |
+
 ## Entity Relationship Diagram
 
 ```mermaid
@@ -61,6 +63,9 @@ erDiagram
     Branch ||--o{ Staff : "employs"
     Branch ||--o{ Promotion : "offers"
     Branch ||--o{ PropertyConfig : "configures"
+    Branch ||--o{ Shift : "schedules"
+
+    User ||--o{ Shift : "assigned_to"
 
     Room ||--o{ Booking : "reserved_in"
     
@@ -315,6 +320,14 @@ ALTER TABLE Booking ADD COLUMN points_discount DECIMAL(10,2) DEFAULT 0.00;
 ALTER TABLE Booking ADD COLUMN loyalty_discount DECIMAL(10,2) DEFAULT 0.00;
 ```
 New installations using `schema.sql` already include this.
+
+### Staff Scheduling Support (Dec 2025)
+Added Shift table for staff scheduling. Run this migration:
+```bash
+# In phpMyAdmin: Import database/add_shift_table.sql
+```
+New installations using `schema.sql` already include this.
+
 > [!IMPORTANT]
 > If you experience any database synchronization issues or errors after these updates, the cleanest fix is to **delete your local database** and re-import `schema.sql` (or let the backend recreate it).
 

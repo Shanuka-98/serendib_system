@@ -15,6 +15,7 @@ from app.models.loyalty_program import LoyaltyProgram
 from app.models.audit_log import AuditLog
 from app.models.property_config import PropertyConfig
 from app.models.promotion import Promotion
+from app.models.shift import Shift
 
 __all__ = [
     'Branch',
@@ -28,5 +29,6 @@ __all__ = [
     'LoyaltyProgram',
     'AuditLog',
     'PropertyConfig',
-    'Promotion'
+    'Promotion',
+    'Shift'
 ]
