@@ -15,29 +15,34 @@ import { Modal } from '../../components/Modal'
 import { EmptyState } from '../../components/EmptyState'
 
 const ServiceManagementPage = () => {
-  const [requests, setRequests] = useState([])
+  const [allRequests, setAllRequests] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('pending')
+  const [filter, setFilter] = useState('all')
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [updating, setUpdating] = useState(false)
 
   useEffect(() => {
     fetchRequests()
-  }, [filter])
+  }, [])
 
   const fetchRequests = async () => {
     try {
       setLoading(true)
-      const params = filter !== 'all' ? { status: filter } : {}
-      const response = await serviceRequestAPI.getRequests(params)
-      setRequests(response.data.data?.service_requests || [])
+      // Always fetch all requests for accurate stats
+      const response = await serviceRequestAPI.getRequests({})
+      setAllRequests(response.data.data?.service_requests || [])
     } catch (error) {
       console.error('Error fetching service requests:', error)
     } finally {
       setLoading(false)
     }
   }
+
+  // Filter requests client-side for table display
+  const requests = filter === 'all' 
+    ? allRequests 
+    : allRequests.filter(r => r.status === filter)
 
   const handleStatusUpdate = async (requestId, newStatus) => {
     try {
@@ -79,11 +84,12 @@ const ServiceManagementPage = () => {
     urgent: 'bg-red-100 text-red-700',
   }
 
-  // Stats
+  // Stats - always calculated from all requests for accuracy
   const stats = {
-    pending: requests.filter(r => r.status === 'pending').length,
-    in_progress: requests.filter(r => r.status === 'in_progress').length,
-    completed: requests.filter(r => r.status === 'completed').length,
+    all: allRequests.length,
+    pending: allRequests.filter(r => r.status === 'pending').length,
+    in_progress: allRequests.filter(r => r.status === 'in_progress').length,
+    completed: allRequests.filter(r => r.status === 'completed').length,
   }
 
   // Table columns
@@ -103,12 +109,12 @@ const ServiceManagementPage = () => {
       ),
     },
     {
-      key: 'booking',
+      key: 'guest_room',
       label: 'Room',
       render: (value) => (
         <div className="flex items-center gap-1">
           <Bed className="w-3 h-3 text-gray-400" />
-          <span className="text-sm">{value?.room?.room_number || 'N/A'}</span>
+          <span className="text-sm">{value || 'N/A'}</span>
         </div>
       ),
     },
@@ -132,7 +138,7 @@ const ServiceManagementPage = () => {
       ),
     },
     {
-      key: 'created_at',
+      key: 'requested_at',
       label: 'Created',
       render: (value) => <span className="text-sm text-gray-500">{formatDate(value)}</span>,
     },
@@ -174,7 +180,7 @@ const ServiceManagementPage = () => {
           className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6"
         >
           {[
-            { key: 'all', label: 'All Requests', count: requests.length, color: 'bg-gray-100 text-gray-700' },
+            { key: 'all', label: 'All Requests', count: stats.all, color: 'bg-gray-100 text-gray-700' },
             { key: 'pending', label: 'Pending', count: stats.pending, color: 'bg-amber-100 text-amber-700' },
             { key: 'in_progress', label: 'In Progress', count: stats.in_progress, color: 'bg-primary-100 text-primary-700' },
             { key: 'completed', label: 'Completed', count: stats.completed, color: 'bg-mint-100 text-mint-700' },
