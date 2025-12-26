@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Lock, Hotel } from 'lucide-react'
+import { Lock, Eye, EyeOff } from 'lucide-react'
 import { authAPI } from '../../services/api'
 import { toast } from 'react-toastify'
 
@@ -10,6 +10,8 @@ const ResetPasswordPage = () => {
   const token = searchParams.get('token')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
@@ -46,11 +48,23 @@ const ResetPasswordPage = () => {
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 w-full max-w-md"
       >
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-lavender-500 rounded-2xl mb-4 shadow-lg">
-            <Hotel className="h-8 w-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-display font-bold text-gray-800 mb-2">
+        <div className="text-center mb-6">
+          <Link to="/" className="inline-block">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <img 
+                src="/logo.png" 
+                alt="Serendib Hotels" 
+                className="h-28 w-auto object-contain mx-auto"
+              />
+              <span className="block text-2xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-lavender-600 -mt-1">
+                Serendib Hotels
+              </span>
+            </motion.div>
+          </Link>
+          <h1 className="text-3xl font-display font-bold text-gray-800 mt-4 mb-2">
             Set New Password
           </h1>
           <p className="text-gray-600">Create a strong password</p>
@@ -65,14 +79,25 @@ const ResetPasswordPage = () => {
               <div className="relative">
                 <Lock className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input pl-12"
+                  className="input pl-12 pr-12"
                   placeholder="••••••••"
                   required
                   minLength={6}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
               </div>
             </div>
 
@@ -83,14 +108,25 @@ const ResetPasswordPage = () => {
               <div className="relative">
                 <Lock className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
                 <input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input pl-12"
+                  className="input pl-12 pr-12"
                   placeholder="••••••••"
                   required
                   minLength={6}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
               </div>
             </div>
 
