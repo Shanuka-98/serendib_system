@@ -41,7 +41,6 @@ const Navbar = () => {
     { path: '/service-requests', label: 'Services', icon: ConciergeBell },
     { path: '/my-bookings', label: 'My Bookings', icon: Calendar },
     { path: '/loyalty', label: 'Rewards', icon: Award },
-    { path: '/profile', label: 'Profile', icon: User },
   ]
 
   // Staff Navigation with Categories (like Admin)
