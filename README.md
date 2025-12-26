@@ -29,9 +29,9 @@
 ### **Complete Backend (Flask API)** - 100% Functional
 
 #### Database (MySQL)
-- `database/schema.sql` - Complete schema with 12 tables and proper relationships.
-- **Recent Update:** Updated `Room` status Enum to support `cleaning` status.
-- Models for Branch, User, Room, Booking, Payment, ServiceRequest, Notification, Staff, LoyaltyProgram, AuditLog, PropertyConfig, Promotion.
+- `database/schema.sql` - Complete schema with **13 tables** and proper relationships.
+- **Recent Update:** Added `Shift` table for staff scheduling.
+- Models for Branch, User, Room, Booking, Payment, ServiceRequest, Notification, Staff, LoyaltyProgram, LoyaltyHistory, AuditLog, PropertyConfig, Promotion, **Shift**.
 - 3 active branches (Colombo, Mirissa, Kandy).
 
 #### API Routes (Fully Integrated)
@@ -39,14 +39,17 @@
 - **Rooms**: Advanced Search (filter by dates, type, price, status), Availability Checking, Admin CRUD.
 - **Bookings**: Full flow (Search -> Select -> Book -> Pay -> Confirm), History, Cancellation, Check-In/Out.
 - **Payments**: Stripe integration for secure payments.
+- **Promotions**: Promo code CRUD, validation, and booking integration.
+- **Loyalty**: Points earning, redemption, tier upgrades (Bronze/Silver/Gold/Platinum).
 - **Service Requests**: Create, Assign, Update Status, Priority Management.
 - **Staff Operations**: Real-time Room Status, Check-In/Out with **Guest Photo Upload**.
+- **Staff Scheduling**: Shift management with overlap detection, weekly calendar view.
 - **Admin Dashboard**: Analytics (Revenue, Occupancy), User & Branch Management, Audit Logs.
 - **Analytics**: Comprehensive charts for business insights.
 
 ---
 
-### **Frontend (React + Vite)** - 99% Complete
+### **Frontend (React + Vite)** - 100% Complete
 
 #### UI/UX Design
 - **Modern Aesthetic**: Glass-morphism, gradients, and a clean color palette (Sky Blue, Peach, Mint, Lavender).
@@ -57,37 +60,40 @@
 #### Core Features Implemented
 
 **1. Guest Portal (100%)**
-- **Home**: Beautiful landing page with brand showcase.
-- **Room Search**: Advanced filtering, real-time availability.
-- **Booking Flow**: Seamless process with Stripe payment integration.
-- **My Profile**: Booking history, loyalty status (Bronze/Silver/Gold/Platinum), service requests.
+- **Home** (`/`): Landing page with brand showcase and branch highlights.
+- **About** (`/about`): Company information and values.
+- **Contact** (`/contact`): Contact details and branch locations.
+- **Careers** (`/careers`): Job listings and application info.
+- **Privacy** (`/privacy`): Privacy policy page.
+- **Room Search** (`/rooms`): Advanced filtering, real-time availability.
+- **Room Details** (`/rooms/:id`): Room info, amenities, gallery, booking button.
+- **Booking** (`/booking`): Date selection, Stripe payment, promo codes, loyalty redemption.
+- **Booking Success** (`/booking/success`): Confirmation page after payment.
+- **My Bookings** (`/my-bookings`): Booking history, cancel booking, view details.
+- **Booking Details** (`/bookings/:id`): Full booking info, print receipt.
+- **Rewards** (`/loyalty`): Points balance, tier status, redeem points.
+- **Service Requests** (`/service-requests`): Request room service, housekeeping, etc.
+- **Profile** (`/profile`): View and edit profile, change password.
 
-**2. Staff Dashboard (100% - Recently Polished)**
-- **Dashboard**: Real-time stats, upcoming tasks, quick actions.
-- **Check-In/Check-Out**:
-    - **New**: Guest Photo Upload feature during check-in.
-    - Search by booking ID, name, or room.
-- **Room Status**:
-    - **Fixed**: Real-time status updates (Available, Occupied, Maintenance, **Cleaning**, **Reserved**).
-    - **Fixed**: "Cleaning" status persistence issue resolved (Backend & Frontend).
-    - **Updated**: Icon-only refresh buttons for cleaner UI.
-- **Service Management**:
-    - **Fixed**: Crash resolved (`requests.filter` error).
-    - Create, view, and update service requests.
+**2. Staff Dashboard (100%)**
+- **Dashboard** (`/staff`): Real-time stats, upcoming check-ins, quick actions.
+- **All Bookings** (`/staff/bookings`): View all branch bookings, search, filter by status.
+- **Check-In/Out** (`/staff/check-in-out`): Process check-ins with photo upload, check-outs.
+- **Room Status** (`/staff/room-status`): Real-time room status grid, update status.
+- **Service Management** (`/staff/services`): View and manage guest service requests.
+- **Staff Schedule** (`/staff/schedule`): Weekly calendar view, view branch shifts.
 
-**3. Admin Dashboard (99% - Recently Polished)**
-- **Dashboard**: High-level metrics (Revenue, Occupancy, active users).
-- **Branch Management**:
-    - **Fixed**: Update functionality and API integration.
-    - Configuration for tax rates and contact info.
-- **Room Management**: Full CRUD, image management placeholder.
-- **User Management**: Add/Edit/Suspend users, role assignment.
-- **Audit Logs**: Traceable history of system actions (Icon-only refresh button).
-- **Analytics** (`/api/analytics/*`)
-  - Revenue analytics
-  - Occupancy rates
-  - Booking trends
-  - Customer insights
+**3. Admin Dashboard (100%)**
+- **Dashboard** (`/admin`): High-level metrics (Revenue, Occupancy, Users).
+- **User Management** (`/admin/users`): Add/Edit/Suspend users, role assignment.
+- **Room Management** (`/admin/rooms`): Full CRUD, image upload, status management.
+- **Branch Management** (`/admin/branches`): Branch config, tax rates, contact info.
+- **Promotions** (`/admin/promotions`): Create/edit promo codes, set discounts.
+- **Staff Schedule** (via Management): Create/edit/delete shifts, assign staff.
+- **Analytics** (`/admin/analytics`): Revenue, occupancy, booking trends, insights.
+- **Audit Logs** (`/admin/audit-logs`): Traceable history of system actions.
+- **Settings** (`/admin/settings`): SMS toggle controls, system configuration.
+- **Profile** (`/admin/profile`): Admin profile management.
 
 #### Third-Party Integrations
 - **Stripe Payments**: Secure credit card processing using Payment Intents and Webhooks.
