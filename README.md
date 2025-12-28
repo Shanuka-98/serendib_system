@@ -1,6 +1,6 @@
 # Serendib Smart Hotel Management System - Complete Project Documentation
 
-**Last Updated:** December 26, 2025  
+**Last Updated:** December 28, 2025  
 **Overall Progress:** **100% Complete** - All Features Implemented
 
 > **Note:** This is the comprehensive project documentation. All project status, information, and recent updates are consolidated here.
@@ -99,7 +99,38 @@
 - **Stripe Payments**: Secure credit card processing using Payment Intents and Webhooks.
 - **Text.lk SMS Gateway**: SMS notifications for bookings, payments, and cancellations with admin toggle controls.
 
-## Recent Fixes and Improvements (December 26, 2025)
+## Recent Updates (December 28, 2025)
+
+### 🌟 New Features
+1.  **Real-Time Notifications for Staff (Socket.IO)**:
+    -   Staff receive instant notifications when bookings are confirmed (after payment).
+    -   Branch-specific filtering: Staff only see notifications for their assigned branch.
+    -   NotificationBell component with dropdown, sound alerts, and unread count badge.
+    -   Notifications include formatted booking references (e.g., `SER-2025-000031`).
+    -   Polling fallback when WebSocket connection is unavailable.
+    -   *Note: Disabled for admins as they don't handle booking/service operations.*
+
+2.  **Staff Booking Details Page** (`/staff/bookings/:id`):
+    -   Dedicated page for viewing full booking details.
+    -   Guest info (name, email, phone), room details, stay dates at a glance.
+    -   Payment summary with discounts (loyalty, points, promo codes).
+    -   Actions: Mark as Paid, Print Receipt, Cancel Booking.
+    -   Clicking notification or View Details button navigates here.
+
+3.  **Staff Dashboard Improvements**:
+    -   Extended booking lookahead from 1 day to 7 days.
+    -   Renamed "Active Bookings" to "Upcoming Bookings" for clarity.
+    -   New "Upcoming Bookings" section with clickable cards.
+    -   Cards link directly to booking details page.
+
+### 🐛 Bug Fixes
+1.  **Guest Information Display**: Fixed email and phone showing "N/A" by using correct API field names (`guest_email`, `guest_phone`).
+2.  **Mobile Responsiveness**: Guest and Room Information grids now stack on mobile.
+3.  **Syntax Error**: Fixed missing closing parenthesis in Staff Bookings page.
+
+---
+
+## Previous Updates (December 26, 2025)
 
 ### 🌟 New Features
 1.  **Staff Scheduling System**:
@@ -108,7 +139,7 @@
     -   **Admin**: Create, edit, delete shifts. Auto-fill branch on staff selection.
     -   **Staff**: View all shifts in their branch for coordination.
     -   **Overlap Detection**: Prevents double-booking staff.
-    -   Navigation: Admin (Management → Staff Schedule), Staff (Operations → Schedule).
+    -   Navigation: Admin (Management to Staff Schedule), Staff (Operations to Schedule).
 
 ---
 
@@ -325,6 +356,7 @@
 | **Flask-JWT-Extended** (4.5.3) | Authentication & Security. |
 | **Flask-CORS** (4.0.0) | Cross-Origin Resource Sharing. |
 | **Flask-Bcrypt** (1.0.1) | Password hashing. |
+| **Flask-SocketIO** (5.3.6) | Real-time WebSocket notifications. |
 | **PyMySQL** (1.1.0) | MySQL client. |
 | **Flask-Migrate** (4.0.5) | Database migrations. |
 
@@ -337,6 +369,7 @@
 | **React Router DOM** (6.20.0) | Client-side routing. |
 | **Framer Motion** (10.18.0) | Animations. |
 | **Axios** (1.6.2) | HTTP Client. |
+| **Socket.IO Client** (4.7.2) | Real-time WebSocket connection. |
 | **Zustand** (4.4.7) | State Management. |
 | **Lucide React** (0.294.0) | Icons. |
 | **Date-fns** (3.0.0) | Date manipulation. |
