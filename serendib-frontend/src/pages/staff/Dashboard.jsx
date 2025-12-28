@@ -10,9 +10,10 @@ const StaffDashboard = () => {
     todayCheckIns: 0,
     todayCheckOuts: 0,
     pendingRequests: 0,
-    activeBookings: 0
+    upcomingBookings: 0
   })
   const [todayBookings, setTodayBookings] = useState([])
+  const [upcomingBookingsList, setUpcomingBookingsList] = useState([])
   const [pendingRequests, setPendingRequests] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -23,8 +24,8 @@ const StaffDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
-      // Fetch today's bookings
-      const bookingsResponse = await bookingAPI.getUpcoming(1)
+      // Fetch upcoming bookings (7 days lookahead for better visibility)
+      const bookingsResponse = await bookingAPI.getUpcoming(7)
       const bookings = bookingsResponse.data.data?.bookings || []
       
       // Filter today's check-ins and check-outs
@@ -43,14 +44,26 @@ const StaffDashboard = () => {
       const requestsData = requestsResponse.data.data
       const requests = Array.isArray(requestsData) ? requestsData : (requestsData?.requests || [])
 
+      // Count upcoming bookings (confirmed bookings in the next 7 days)
+      const upcomingBookings = bookings.filter(b => 
+        b.status === 'confirmed' || b.status === 'pending' || b.status === 'checked_in'
+      )
+
       setStats({
         todayCheckIns: checkIns.length,
         todayCheckOuts: checkOuts.length,
         pendingRequests: requests.length,
-        activeBookings: bookings.filter(b => b.status === 'confirmed' || b.status === 'checked_in').length
+        upcomingBookings: upcomingBookings.length
       })
       
+      // Set today's schedule
       setTodayBookings([...checkIns, ...checkOuts].slice(0, 5))
+      // Set upcoming bookings (exclude today's)
+      const futureBookings = upcomingBookings.filter(b => {
+        const checkInDate = b.check_in_date || b.check_in
+        return checkInDate && format(new Date(checkInDate), 'yyyy-MM-dd') !== today
+      })
+      setUpcomingBookingsList(futureBookings.slice(0, 5))
       setPendingRequests(requests.slice(0, 5))
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
@@ -82,8 +95,8 @@ const StaffDashboard = () => {
       bg: 'from-lavender-400 to-lavender-600'
     },
     {
-      title: 'Active Bookings',
-      value: stats.activeBookings,
+      title: 'Upcoming Bookings',
+      value: stats.upcomingBookings,
       icon: TrendingUp,
       color: 'mint',
       bg: 'from-mint-400 to-mint-600'
@@ -200,7 +213,7 @@ const StaffDashboard = () => {
                 <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
               </div>
             ) : todayBookings.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No bookings scheduled for today</p>
+              <p className="text-gray-500 text-center py-8">No bookings scheduled</p>
             ) : (
               <div className="space-y-3">
                 {todayBookings.map((booking) => {
@@ -265,6 +278,64 @@ const StaffDashboard = () => {
             )}
           </motion.div>
         </div>
+
+        {/* Upcoming Bookings Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="glass rounded-2xl p-6 mt-6"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-display font-bold text-gray-800 flex items-center">
+              <TrendingUp className="h-6 w-6 mr-2 text-mint-500" />
+              Upcoming Bookings
+            </h2>
+            <Link to="/staff/bookings" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+              View All →
+            </Link>
+          </div>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            </div>
+          ) : upcomingBookingsList.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No upcoming bookings in the next 7 days</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {upcomingBookingsList.map((booking) => {
+                const checkInDate = booking.check_in_date || booking.check_in
+                const checkOutDate = booking.check_out_date || booking.check_out
+                return (
+                  <Link
+                    key={booking.booking_id}
+                    to={`/staff/bookings/${booking.booking_id}`}
+                    className="p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-gray-800">
+                        Room {booking.room?.room_number || 'N/A'}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                        booking.status === 'confirmed' ? 'bg-blue-100 text-blue-700' : 
+                        booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 
+                        'bg-green-100 text-green-700'
+                      }`}>
+                        {booking.status?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-1">
+                      {booking.user?.full_name || booking.guest_name || 'Guest'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {checkInDate ? format(new Date(checkInDate), 'MMM dd') : ''} - {checkOutDate ? format(new Date(checkOutDate), 'MMM dd') : ''}
+                    </p>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+        </motion.div>
       </div>
     </div>
   )

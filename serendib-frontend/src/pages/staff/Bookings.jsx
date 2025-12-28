@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, Calendar, MapPin, User, CreditCard, CheckCircle, 
@@ -15,8 +16,8 @@ const StaffBookingsPage = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [selectedBooking, setSelectedBooking] = useState(null)
   const [processingPayment, setProcessingPayment] = useState(false)
+  const navigate = useNavigate()
   const [paymentConfirmBooking, setPaymentConfirmBooking] = useState(null)
   const [cancelBooking, setCancelBooking] = useState(null)
   const [cancelReason, setCancelReason] = useState('')
@@ -340,7 +341,7 @@ const StaffBookingsPage = () => {
                       
                       <div className="flex gap-2">
                         <button
-                          onClick={() => setSelectedBooking(booking)}
+                          onClick={() => navigate(`/staff/bookings/${booking.booking_id}`)}
                           className="btn btn-secondary p-2"
                           title="View Details"
                         >
@@ -376,175 +377,6 @@ const StaffBookingsPage = () => {
           </div>
         )}
       </div>
-
-      {/* Booking Details Modal */}
-      <AnimatePresence>
-        {selectedBooking && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setSelectedBooking(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-display font-bold text-gray-800">
-                    Booking Details
-                  </h2>
-                  <button
-                    onClick={() => setSelectedBooking(null)}
-                    className="p-2 hover:bg-gray-100 rounded-xl"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-xl">
-                    <p className="text-sm text-gray-500 mb-1">Reference</p>
-                    <p className="text-lg font-bold text-primary-600">
-                      {formatBookingRef(selectedBooking.booking_id)}
-                    </p>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-500">Guest</p>
-                      <p className="font-medium">{selectedBooking.user?.full_name || selectedBooking.guest_name}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Room</p>
-                      <p className="font-medium">{selectedBooking.room?.room_number || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Check-in</p>
-                      <p className="font-medium">
-                        {selectedBooking.check_in_date 
-                          ? format(parseISO(selectedBooking.check_in_date), 'MMM dd, yyyy')
-                          : 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Check-out</p>
-                      <p className="font-medium">
-                        {selectedBooking.check_out_date 
-                          ? format(parseISO(selectedBooking.check_out_date), 'MMM dd, yyyy')
-                          : 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Status</p>
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusBadge(selectedBooking.status)}`}>
-                        {selectedBooking.status?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Payment</p>
-                      <span className={`font-medium ${
-                        selectedBooking.payment_status === 'completed' ? 'text-green-600' : 'text-yellow-600'
-                      }`}>
-                        {selectedBooking.payment_status === 'completed' ? 'Paid' : 'Pending'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="p-4 bg-primary-50 rounded-xl space-y-2">
-                    {/* Loyalty Discount */}
-                    {selectedBooking.loyalty_discount > 0 && (
-                      <div className="flex justify-between text-sm text-green-700">
-                        <div className="flex items-center">
-                           <Gift className="h-4 w-4 mr-2" />
-                           <span>Loyalty Savings</span>
-                        </div>
-                        <span>-{formatPrice(selectedBooking.loyalty_discount)}</span>
-                      </div>
-                    )}
-
-                    {/* Points Redeemed */}
-                    {selectedBooking.points_discount > 0 && (
-                      <div className="flex justify-between text-sm text-green-700">
-                        <div className="flex items-center">
-                           <Gift className="h-4 w-4 mr-2" />
-                           <span>Points Redeemed ({selectedBooking.loyalty_points_redeemed} pts)</span>
-                        </div>
-                        <span>-{formatPrice(selectedBooking.points_discount)}</span>
-                      </div>
-                    )}
-
-                    {/* Promo Code Discount */}
-                    {selectedBooking.promo_code && (
-                      <div className="flex justify-between text-sm text-green-700">
-                        <div className="flex items-center">
-                          <CreditCard className="h-4 w-4 mr-2" />
-                          <span>Promo: {selectedBooking.promo_code}</span>
-                        </div>
-                        <span>-{formatPrice(selectedBooking.promo_discount || 0)}</span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-700">Total Amount</span>
-                      <span className="text-2xl font-bold text-primary-600">
-                        {formatPrice(selectedBooking.total_amount)}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {selectedBooking.special_requests && (
-                    <div>
-                      <p className="text-sm text-gray-500 mb-1">Special Requests</p>
-                      <p className="text-gray-700 bg-gray-50 p-3 rounded-xl">
-                        {selectedBooking.special_requests}
-                      </p>
-                    </div>
-                  )}
-                  
-                  <div className="flex gap-3 pt-4">
-                    {selectedBooking.payment_status !== 'completed' && selectedBooking.status !== 'cancelled' && selectedBooking.status !== 'checked_out' && (
-                      <button
-                        onClick={() => handleMarkAsPaid(selectedBooking)}
-                        disabled={processingPayment}
-                        className="btn btn-primary flex-1"
-                      >
-                        <DollarSign className="h-4 w-4 mr-2" />
-                        Mark as Paid
-                      </button>
-                    )}
-                    
-                    {selectedBooking.payment_status === 'completed' && (
-                      <button
-                        onClick={() => handlePrintReceipt(selectedBooking)}
-                        className="btn btn-secondary flex-1"
-                      >
-                        <Printer className="h-4 w-4 mr-2" />
-                        Print Receipt
-                      </button>
-                    )}
-                    
-                    {selectedBooking.status !== 'cancelled' && selectedBooking.status !== 'checked_out' && (
-                      <button
-                        onClick={() => setCancelBooking(selectedBooking)}
-                        className="btn btn-secondary text-red-600 hover:bg-red-50 flex-1"
-                      >
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Cancel
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Payment Confirmation Modal */}
       <AnimatePresence>

@@ -187,6 +187,13 @@ def create_service_request():
         
         db.session.commit()
         
+        # Emit real-time notification to staff
+        try:
+            from app.services.notification_service import create_service_request_notification
+            create_service_request_notification(service_request, current_user, booking)
+        except Exception as notif_error:
+            print(f"Real-time notification failed: {notif_error}")
+        
         return success_response(
             data={'service_request': service_request.to_dict(include_relations=True)},
             message='Service request created successfully',

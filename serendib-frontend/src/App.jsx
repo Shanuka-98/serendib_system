@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { NotificationProvider } from './context/NotificationContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
 
@@ -32,6 +33,7 @@ import CheckInOutPage from './pages/staff/CheckInOut'
 import ServiceManagementPage from './pages/staff/ServiceManagement'
 import RoomStatusPage from './pages/staff/RoomStatus'
 import StaffBookingsPage from './pages/staff/Bookings'
+import StaffBookingDetails from './pages/staff/BookingDetails'
 import StaffSchedulePage from './pages/staff/StaffSchedule'
 
 // Admin Pages
@@ -48,7 +50,8 @@ import PromotionsManagement from './pages/admin/PromotionsManagement'
 function App() {
   return (
     <AuthProvider>
-      <Layout>
+      <NotificationProvider>
+        <Layout>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
@@ -76,6 +79,7 @@ function App() {
           {/* Staff Routes */}
           <Route path="/staff" element={<ProtectedRoute roles={['staff', 'admin']}><StaffDashboard /></ProtectedRoute>} />
           <Route path="/staff/bookings" element={<ProtectedRoute roles={['staff', 'admin']}><StaffBookingsPage /></ProtectedRoute>} />
+          <Route path="/staff/bookings/:id" element={<ProtectedRoute roles={['staff', 'admin']}><StaffBookingDetails /></ProtectedRoute>} />
           <Route path="/staff/check-in-out" element={<ProtectedRoute roles={['staff', 'admin']}><CheckInOutPage /></ProtectedRoute>} />
           <Route path="/staff/services" element={<ProtectedRoute roles={['staff', 'admin']}><ServiceManagementPage /></ProtectedRoute>} />
           <Route path="/staff/room-status" element={<ProtectedRoute roles={['staff', 'admin']}><RoomStatusPage /></ProtectedRoute>} />
@@ -95,7 +99,8 @@ function App() {
           {/* 404 */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </Layout>
+        </Layout>
+      </NotificationProvider>
     </AuthProvider>
   )
 }

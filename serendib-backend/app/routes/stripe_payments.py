@@ -260,6 +260,13 @@ def confirm_payment():
         except Exception as sms_error:
             print(f"SMS notification failed: {sms_error}")
         
+        # Emit real-time notification to branch staff
+        try:
+            from app.services.notification_service import create_booking_notification
+            create_booking_notification(booking, booking.user)
+        except Exception as notif_error:
+            print(f"Real-time notification failed: {notif_error}")
+        
         return success_response(
             data={
                 'payment_id': payment.payment_id,

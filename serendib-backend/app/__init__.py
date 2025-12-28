@@ -6,12 +6,14 @@ from flask_jwt_extended import JWTManager
 from flask_mail import Mail
 from flask_cors import CORS
 from flask_migrate import Migrate
+from flask_socketio import SocketIO
 
 db = SQLAlchemy()
 bcrypt = Bcrypt()
 jwt = JWTManager()
 mail = Mail()
 migrate = Migrate()
+socketio = SocketIO()
 
 def create_app(config_name='development'):
     from app.config import config
@@ -42,6 +44,15 @@ def create_app(config_name='development'):
         }
     })
 
+    # Initialize Socket.IO with CORS for WebSocket connections
+    socketio.init_app(app, cors_allowed_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+    ])
+    
+    # Register Socket.IO event handlers
+    from app.socket_events import register_socket_events
+    register_socket_events(socketio)
     
     register_blueprints(app)
     register_error_handlers(app)

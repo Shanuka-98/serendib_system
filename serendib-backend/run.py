@@ -1,6 +1,6 @@
 """Application Entry Point"""
 import os
-from app import create_app, db
+from app import create_app, db, socketio
 
 env = os.getenv('FLASK_ENV', 'development')
 app = create_app(env)
@@ -16,4 +16,6 @@ def make_shell_context():
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=app.config['DEBUG'])
+    # Use socketio.run() for WebSocket support
+    socketio.run(app, host='0.0.0.0', port=port, debug=app.config['DEBUG'])
+

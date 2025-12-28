@@ -8,6 +8,7 @@ import {
   LayoutDashboard, Cog, ConciergeBell, Clock
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import NotificationBell from './NotificationBell'
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth()
@@ -278,7 +279,17 @@ const Navbar = () => {
           )}
 
           {/* Right Side */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {/* Notification Bell (Staff only) */}
+            {/* 
+              NOTE: To enable notifications for admins, change condition to: 
+              isAuthenticated && (isStaff || isAdmin)
+              Currently disabled for admins as they don't receive booking/service notifications
+            */}
+            {isAuthenticated && isStaff && (
+              <NotificationBell />
+            )}
+            
             {/* User Menu */}
             {isAuthenticated ? (
               <div className="relative">
