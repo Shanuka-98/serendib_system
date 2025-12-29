@@ -10,6 +10,7 @@ from app.models.service_request import ServiceRequest
 from app.models.booking import Booking
 from app.models.notification import Notification
 from app.models.audit_log import AuditLog
+from app.models.user import User
 from app.middleware.auth import staff_or_admin_required, get_current_user
 from app.utils.helpers import (
     success_response, error_response, validate_required_fields, get_ip_address
@@ -237,15 +238,55 @@ def update_service_request(request_id):
             if not success:
                 return error_response(message, status_code=400)
         
-        # Assign to staff
+        # Assign or unassign staff
         if 'assigned_staff_id' in data:
-            service_request.assign_to_staff(data['assigned_staff_id'])
+            new_staff_id = data['assigned_staff_id']
+            
+            # Handle unassign (null or empty)
+            if new_staff_id is None or new_staff_id == '' or new_staff_id == 0:
+                service_request.assigned_staff_id = None
+                db.session.flush()
+            else:
+                staff_to_assign = User.query.get(new_staff_id)
+                if not staff_to_assign:
+                    return error_response('Assigned staff member not found', status_code=404)
+                
+                # Cross-branch protection
+                if staff_to_assign.branch_id != service_request.booking.branch_id:
+                    return error_response('Cannot assign staff from a different branch', status_code=403)
+
+                service_request.assign_to_staff(new_staff_id)
+                
+                # Notify the assigned staff member (database)
+                room_number = service_request.booking.room.room_number if service_request.booking and service_request.booking.room else 'N/A'
+                Notification.create_notification(
+                    user_id=new_staff_id,
+                    message=f'You have been assigned a {service_request.service_type.replace("_", " ")} task for Room {room_number}.',
+                    notification_type='service',
+                    related_id=service_request.request_id
+                )
+                
+                # Emit real-time notification to assigned user
+                try:
+                    from app.services.notification_service import emit_to_user
+                    service_type_display = service_request.service_type.replace('_', ' ').title()
+                    emit_to_user(new_staff_id, {
+                        'type': 'assignment',
+                        'title': 'New Task Assigned',
+                        'message': f'You have been assigned a {service_type_display} task for Room {room_number}.',
+                        'related_id': service_request.request_id,
+                        'action_url': f'/staff/services/{service_request.request_id}',
+                        'service_type': service_request.service_type,
+                        'room_number': room_number
+                    })
+                except Exception as emit_error:
+                    print(f"[Assignment] Real-time notification failed: {emit_error}")
         
         # Auto-assign to current staff if moving to in_progress
         if data.get('status') == 'in_progress' and not service_request.assigned_staff_id:
             service_request.assign_to_staff(current_user.user_id)
         
-        # Create notification
+        # Create notification for guest when completed
         if data.get('status') == 'completed':
             Notification.create_notification(
                 user_id=service_request.user_id,

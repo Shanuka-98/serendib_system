@@ -44,25 +44,31 @@ const Navbar = () => {
     { path: '/loyalty', label: 'Rewards', icon: Award },
   ]
 
-  // Staff Navigation with Categories (like Admin)
+  // Roles that use "My Work" (Non-Managerial)
+  const taskRoles = ['housekeeping', 'food_beverage', 'maintenance', 'concierge', 'spa', 'security']
+
+  // Staff Navigation with Categories
   const staffNavCategories = [
     {
-      label: 'Operations',
+      label: 'My Work',
       icon: CheckCircle,
       type: 'dropdown',
       items: [
-        { path: '/staff/check-in-out', label: 'Check-in/Out', icon: CheckCircle },
-        { path: '/staff/bookings', label: 'All Bookings', icon: Calendar },
-        { path: '/staff/room-status', label: 'Room Status', icon: Bed },
-        { path: '/staff/schedule', label: 'Schedule', icon: Clock },
+         { path: '/staff/my-tasks', label: 'My Tasks', icon: CheckCircle, allowedRoleTypes: taskRoles },
+         { path: '/staff/schedule', label: 'My Schedule', icon: Clock, allowedRoleTypes: taskRoles },
       ]
     },
     {
-      label: 'Services',
-      icon: AlertCircle,
+      label: 'Operations',
+      icon: LayoutDashboard,
       type: 'dropdown',
+      // Only show this category if user has access to at least one item
       items: [
-        { path: '/staff/services', label: 'Requests', icon: AlertCircle },
+        { path: '/staff/check-in-out', label: 'Check-in/Out', icon: User, allowedRoleTypes: ['manager', 'front_desk'] },
+        { path: '/staff/bookings', label: 'All Bookings', icon: Calendar, allowedRoleTypes: ['manager', 'front_desk'] },
+        { path: '/staff/room-status', label: 'Room Status', icon: Bed, allowedRoleTypes: ['manager', 'front_desk', 'maintenance'] },
+        { path: '/staff/services', label: 'Service Requests', icon: AlertCircle, allowedRoleTypes: ['manager', 'front_desk'] },
+        { path: '/staff/schedule', label: 'Staff Schedule', icon: Clock, allowedRoleTypes: ['manager', 'front_desk'] }, // Manager View
       ]
     },
   ]
@@ -203,8 +209,16 @@ const Navbar = () => {
           {isAuthenticated && isStaff && (
             <div className="hidden md:flex items-center gap-2 ml-auto mr-4" ref={dropdownRef}>
               {staffNavCategories.map((item) => {
+                // Filter items based on role_type
+                const visibleItems = item.items.filter(subItem => 
+                  !subItem.allowedRoleTypes || (user?.role_type && subItem.allowedRoleTypes.includes(user.role_type))
+                )
+                
+                if (visibleItems.length === 0) return null
+
                 const Icon = item.icon
-                const isDropdownActive = item.items?.some(i => isActive(i.path))
+                const isDropdownActive = visibleItems.some(i => isActive(i.path))
+                
                 return (
                   <div key={item.label} className="relative">
                     <button
@@ -228,7 +242,7 @@ const Navbar = () => {
                           exit={{ opacity: 0, y: -10 }}
                           className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50"
                         >
-                          {item.items.map((subItem) => {
+                          {visibleItems.map((subItem) => {
                             const SubIcon = subItem.icon
                             return (
                               <Link
@@ -474,13 +488,19 @@ const Navbar = () => {
 
               {/* Staff Mobile Nav */}
               {isStaff && staffNavCategories.map((item) => {
+                const visibleItems = item.items.filter(subItem => 
+                  !subItem.allowedRoleTypes || (user?.role_type && subItem.allowedRoleTypes.includes(user.role_type))
+                )
+                
+                if (visibleItems.length === 0) return null
+
                 const Icon = item.icon
                 return (
                   <div key={item.label} className="space-y-1">
                     <p className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                       {item.label}
                     </p>
-                    {item.items.map((subItem) => {
+                    {visibleItems.map((subItem) => {
                       const SubIcon = subItem.icon
                       return (
                         <Link

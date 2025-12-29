@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Mail, Lock, ArrowRight, Hotel, Eye, EyeOff } from 'lucide-react'
+import { Mail, Lock, ArrowRight, Hotel, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 const LoginPage = () => {
@@ -9,12 +9,14 @@ const LoginPage = () => {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const { login } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setError('') // Clear previous errors
     
     const result = await login(email, password)
     
@@ -27,6 +29,9 @@ const LoginPage = () => {
       } else {
         navigate('/')
       }
+    } else {
+      // Display error message
+      setError(result.error || 'Invalid email or password. Please try again.')
     }
     
     setLoading(false)
@@ -116,6 +121,17 @@ const LoginPage = () => {
                   )}
                 </button>
               </div>
+              {/* Error Message */}
+              {error && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-red-600 text-sm mt-2 flex items-center gap-1"
+                >
+                  <AlertCircle className="w-4 h-4" />
+                  {error}
+                </motion.p>
+              )}
             </div>
 
             {/* Forgot Password Link */}
@@ -157,11 +173,11 @@ const LoginPage = () => {
 
           {/* Demo Credentials */}
           <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-            <p className="text-xs font-semibold text-gray-700 mb-2">Demo Credentials:</p>
+            <p className="text-xs font-semibold text-gray-700 mb-2">Demo Credentials (Password: Test@123)</p>
             <div className="text-xs text-gray-600 space-y-1">
-              <p><strong>Admin:</strong> admin@serendibhotels.lk / admin123</p>
-              <p><strong>Guest:</strong> john.doe@example.com / guest123</p>
-              <p><strong>Staff:</strong> staff@serendibhotels.lk / Test@1234</p>
+              <p><strong>Admin:</strong> admin@serendibhotels.lk</p>
+              <p><strong>Staff:</strong> manager@, frontdesk@, housekeeping@, fnb@, maintenance@, concierge@, spa@ (all @serendibhotels.lk)</p>
+              <p><strong>Guest:</strong> john.doe@example.com</p>
             </div>
           </div>
         </div>

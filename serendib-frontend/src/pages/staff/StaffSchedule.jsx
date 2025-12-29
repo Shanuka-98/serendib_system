@@ -10,13 +10,14 @@ import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
 
 const SHIFT_ROLES = [
-  'Reception',
-  'Housekeeping',
-  'Maintenance',
-  'Food & Beverage',
-  'Management',
-  'Security',
-  'Concierge'
+  { value: 'front_desk', label: 'Front Desk' },
+  { value: 'housekeeping', label: 'Housekeeping' },
+  { value: 'food_beverage', label: 'Food & Beverage' },
+  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'concierge', label: 'Concierge' },
+  { value: 'spa', label: 'Spa' },
+  { value: 'manager', label: 'Manager' },
+  { value: 'security', label: 'Security' }
 ]
 
 const StaffSchedulePage = () => {
@@ -27,6 +28,7 @@ const StaffSchedulePage = () => {
   const [loading, setLoading] = useState(true)
   const [currentWeek, setCurrentWeek] = useState(new Date())
   const [selectedBranch, setSelectedBranch] = useState('')
+  const [selectedRole, setSelectedRole] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState(null)
   const [editingShift, setEditingShift] = useState(null)
@@ -35,7 +37,7 @@ const StaffSchedulePage = () => {
 
   useEffect(() => {
     fetchData()
-  }, [currentWeek, selectedBranch])
+  }, [currentWeek, selectedBranch, selectedRole])
 
   const fetchData = async () => {
     try {
@@ -54,7 +56,21 @@ const StaffSchedulePage = () => {
         isAdmin ? adminAPI.getBranches() : Promise.resolve({ data: { data: [] } })
       ])
 
-      setShifts(shiftsRes.data?.data?.shifts || [])
+      let fetchedShifts = shiftsRes.data?.data?.shifts || []
+      
+      // RESTRICTION: Managers/Front Desk see all; Others see only their own
+      const isManagerial = user?.role_type === 'manager' || user?.role_type === 'front_desk' || user?.role === 'admin'
+      
+      if (!isManagerial && user?.user_id) {
+        fetchedShifts = fetchedShifts.filter(s => s.user_id === user.user_id)
+      }
+
+      // Client-side role filtering
+      if (selectedRole) {
+        fetchedShifts = fetchedShifts.filter(s => s.role === selectedRole)
+      }
+
+      setShifts(fetchedShifts)
       setBranches(branchesRes.data?.data?.branches || branchesRes.data?.data || [])
 
       if (isAdmin) {
@@ -163,21 +179,40 @@ const StaffSchedulePage = () => {
               </button>
             </div>
 
-            {/* Branch Filter (Admin only) */}
-            {isAdmin && branches.length > 0 && (
-              <select
-                value={selectedBranch}
-                onChange={(e) => setSelectedBranch(e.target.value)}
-                className="input w-48"
-              >
-                <option value="">All Branches</option>
-                {branches.map(branch => (
-                  <option key={branch.branch_id} value={branch.branch_id}>
-                    {branch.name}
-                  </option>
-                ))}
-              </select>
-            )}
+            <div className="flex gap-2">
+              {/* Role Filter */}
+              {/* Role Filter - Only visible to Managers/Front Desk */}
+              {(user?.role_type === 'manager' || user?.role_type === 'front_desk' || user?.role === 'admin') && (
+                <select
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className="input w-40"
+                >
+                  <option value="">All Departments</option>
+                  {SHIFT_ROLES.map(role => (
+                    <option key={role.value} value={role.value}>
+                      {role.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {/* Branch Filter (Admin only) */}
+              {isAdmin && branches.length > 0 && (
+                <select
+                  value={selectedBranch}
+                  onChange={(e) => setSelectedBranch(e.target.value)}
+                  className="input w-48"
+                >
+                  <option value="">All Branches</option>
+                  {branches.map(branch => (
+                    <option key={branch.branch_id} value={branch.branch_id}>
+                      {branch.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
         </div>
 
@@ -228,7 +263,9 @@ const StaffSchedulePage = () => {
                           className="p-2 bg-gradient-to-r from-primary-100 to-lavender-100 rounded-lg text-xs group relative"
                         >
                           <p className="font-semibold text-gray-800 truncate">{shift.user_name}</p>
-                          <p className="text-gray-600">{shift.role}</p>
+                          <p className="text-gray-600">
+                             {SHIFT_ROLES.find(r => r.value === shift.role)?.label || shift.role}
+                          </p>
                           <p className="text-gray-500">
                             {format(parseISO(shift.start_time), 'HH:mm')} - {format(parseISO(shift.end_time), 'HH:mm')}
                           </p>
@@ -378,11 +415,13 @@ const ShiftModal = ({ isOpen, onClose, onSave, shift, selectedDate, staff, branc
             <select
               value={formData.user_id}
               onChange={(e) => {
-                const selectedStaff = staff.find(s => s.user_id === parseInt(e.target.value))
+                const selectedUserId = parseInt(e.target.value)
+                const selectedStaff = staff.find(s => s.user_id === selectedUserId)
                 setFormData({ 
                   ...formData, 
                   user_id: e.target.value,
-                  branch_id: selectedStaff?.branch_id || formData.branch_id
+                  branch_id: selectedStaff?.branch_id || formData.branch_id,
+                  role: selectedStaff?.role_type || formData.role
                 })
               }}
               className="input w-full"
@@ -426,7 +465,7 @@ const ShiftModal = ({ isOpen, onClose, onSave, shift, selectedDate, staff, branc
             >
               <option value="">Select Role</option>
               {SHIFT_ROLES.map(role => (
-                <option key={role} value={role}>{role}</option>
+                <option key={role.value} value={role.value}>{role.label}</option>
               ))}
             </select>
           </div>

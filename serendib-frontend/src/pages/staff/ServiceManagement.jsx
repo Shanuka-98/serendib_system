@@ -14,22 +14,45 @@ import { ResponsiveTable, StatusBadge } from '../../components/ResponsiveTable'
 import { Modal } from '../../components/Modal'
 import { EmptyState } from '../../components/EmptyState'
 
+import { useAuth } from '../../context/AuthContext'
+
+import { useNavigate } from 'react-router-dom'
+
 const ServiceManagementPage = () => {
+  const { user } = useAuth()
+  const navigate = useNavigate()
   const [allRequests, setAllRequests] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter] = useState('my_department')
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [updating, setUpdating] = useState(false)
 
+  // Role to Service Type Mapping
+  const getDepartmentServices = (roleType) => {
+    const map = {
+      housekeeping: ['housekeeping', 'laundry'],
+      food_beverage: ['room_service', 'dining'],
+      maintenance: ['maintenance'],
+      concierge: ['concierge', 'transport', 'pool'],
+      spa: ['spa'],
+    }
+    return map[roleType] || []
+  }
+
   useEffect(() => {
     fetchRequests()
-  }, [])
+    // Set default filter based on role
+    if (user?.role_type === 'manager' || user?.role_type === 'front_desk' || !user?.role_type) {
+      setFilter('all')
+    } else {
+      setFilter('my_department')
+    }
+  }, [user])
 
   const fetchRequests = async () => {
     try {
       setLoading(true)
-      // Always fetch all requests for accurate stats
       const response = await serviceRequestAPI.getRequests({})
       setAllRequests(response.data.data?.service_requests || [])
     } catch (error) {
@@ -39,10 +62,27 @@ const ServiceManagementPage = () => {
     }
   }
 
-  // Filter requests client-side for table display
-  const requests = filter === 'all' 
-    ? allRequests 
-    : allRequests.filter(r => r.status === filter)
+  // Filter logic
+  const getFilteredRequests = () => {
+    let filtered = allRequests
+    
+    // First, filter by department if "my_department" is selected
+    // Or if the user is a specialist staff and "all" is NOT selected (optional enforcement)
+    // For now, "my_department" allows explicit filtering
+    
+    if (filter === 'my_department') {
+      const allowedServices = getDepartmentServices(user?.role_type)
+      if (allowedServices.length > 0) {
+        filtered = filtered.filter(r => allowedServices.includes(r.service_type))
+      }
+    } else if (filter !== 'all') {
+      filtered = filtered.filter(r => r.status === filter)
+    }
+
+    return filtered
+  }
+
+  const requests = getFilteredRequests()
 
   const handleStatusUpdate = async (requestId, newStatus) => {
     try {
@@ -84,13 +124,25 @@ const ServiceManagementPage = () => {
     urgent: 'bg-red-100 text-red-700',
   }
 
-  // Stats - always calculated from all requests for accuracy
-  const stats = {
-    all: allRequests.length,
-    pending: allRequests.filter(r => r.status === 'pending').length,
-    in_progress: allRequests.filter(r => r.status === 'in_progress').length,
-    completed: allRequests.filter(r => r.status === 'completed').length,
+  // Stats - calculated based on role perspective
+  const getStats = () => {
+    let relevantRequests = allRequests
+    const allowedServices = getDepartmentServices(user?.role_type)
+    
+    // If specialist staff, stats should reflect their department only
+    if (allowedServices.length > 0 && user?.role_type !== 'manager' && user?.role_type !== 'front_desk') {
+      relevantRequests = allRequests.filter(r => allowedServices.includes(r.service_type))
+    }
+
+    return {
+      all: relevantRequests.length,
+      pending: relevantRequests.filter(r => r.status === 'pending').length,
+      in_progress: relevantRequests.filter(r => r.status === 'in_progress').length,
+      completed: relevantRequests.filter(r => r.status === 'completed').length,
+    }
   }
+
+  const stats = getStats()
 
   // Table columns
   const columns = [
@@ -180,27 +232,37 @@ const ServiceManagementPage = () => {
           className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6"
         >
           {[
-            { key: 'all', label: 'All Requests', count: stats.all, color: 'bg-gray-100 text-gray-700' },
-            { key: 'pending', label: 'Pending', count: stats.pending, color: 'bg-amber-100 text-amber-700' },
-            { key: 'in_progress', label: 'In Progress', count: stats.in_progress, color: 'bg-primary-100 text-primary-700' },
-            { key: 'completed', label: 'Completed', count: stats.completed, color: 'bg-mint-100 text-mint-700' },
-          ].map((item) => (
-            <motion.div
-              key={item.key}
-              whileHover={{ y: -4 }}
-              onClick={() => setFilter(item.key)}
-              className={`bg-white rounded-xl p-4 shadow-soft cursor-pointer transition-all ${
-                filter === item.key ? 'ring-2 ring-primary-500' : ''
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className={`text-xl font-bold ${item.color.split(' ')[1]}`}>
-                  {item.count}
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 mt-1">{item.label}</p>
-            </motion.div>
-          ))}
+            { key: 'my_department', label: 'My Department', count: stats.all, color: 'bg-primary-50 text-primary-700', icon: User },
+            { key: 'pending', label: 'Pending', count: stats.pending, color: 'bg-amber-50 text-amber-700', icon: Clock },
+            { key: 'in_progress', label: 'In Progress', count: stats.in_progress, color: 'bg-blue-50 text-blue-700', icon: AlertCircle },
+            { key: 'completed', label: 'Completed', count: stats.completed, color: 'bg-mint-50 text-mint-700', icon: CheckCircle },
+          ].map((item) => {
+             // Only show 'My Department' if relevant
+             if (item.key === 'my_department' && (user?.role_type === 'manager' || user?.role_type === 'front_desk')) {
+                item.label = 'All Requests'
+             }
+             const Icon = item.icon
+             return (
+              <motion.div
+                key={item.key}
+                whileHover={{ y: -4 }}
+                onClick={() => setFilter(item.key)}
+                className={`bg-white rounded-xl p-4 shadow-soft cursor-pointer transition-all border-2 ${
+                  filter === item.key ? 'border-primary-500 ring-2 ring-primary-100' : 'border-transparent'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className={`text-2xl font-bold ${item.color.split(' ')[1]}`}>
+                    {item.count}
+                  </span>
+                  <div className={`p-2 rounded-lg ${item.color}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-gray-600 mt-2">{item.label}</p>
+              </motion.div>
+            )
+          })}
         </motion.div>
 
         {/* Requests Table */}
@@ -221,114 +283,13 @@ const ServiceManagementPage = () => {
               data={requests}
               loading={loading}
               sortable={true}
-              onRowClick={(row) => { setSelectedRequest(row); setModalOpen(true) }}
+              onRowClick={(row) => navigate(`/staff/services/${row.request_id}`)}
               emptyMessage="No service requests found"
             />
           )}
         </motion.div>
 
-        {/* Request Detail Modal */}
-        <Modal
-          isOpen={modalOpen}
-          onClose={() => setModalOpen(false)}
-          title={`Service Request #${selectedRequest?.request_id}`}
-          size="lg"
-        >
-          {selectedRequest && (
-            <div className="space-y-6">
-              {/* Request Info */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-500">Service Type:</span>
-                    <span className="ml-2 font-medium text-gray-800 capitalize">
-                      {selectedRequest.service_type?.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Room:</span>
-                    <span className="ml-2 font-medium text-gray-800">
-                      {selectedRequest.guest_room || 'N/A'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Priority:</span>
-                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${priorityColors[selectedRequest.priority]}`}>
-                      {selectedRequest.priority}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Status:</span>
-                    <span className="ml-2">
-                      <StatusBadge 
-                        status={statusConfig[selectedRequest.status]?.label} 
-                        variant={statusConfig[selectedRequest.status]?.color} 
-                      />
-                    </span>
-                  </div>
-                </div>
-              </div>
 
-              {/* Description */}
-              <div>
-                <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4" />
-                  Description
-                </h4>
-                <p className="text-gray-600 bg-gray-50 p-4 rounded-xl">
-                  {selectedRequest.description || 'No description provided.'}
-                </p>
-              </div>
-
-              {/* Guest Info */}
-              <div>
-                <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                  <User className="w-4 h-4" />
-                  Guest Information
-                </h4>
-                <div className="bg-gray-50 p-4 rounded-xl text-sm">
-                  <p className="font-medium text-gray-800">
-                    {selectedRequest.guest_name || 'N/A'}
-                  </p>
-                  <p className="text-gray-500">
-                    {selectedRequest.guest_email || 'N/A'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Update Status */}
-              {selectedRequest.status !== 'completed' && selectedRequest.status !== 'cancelled' && (
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">Update Status</h4>
-                  <div className="flex gap-2">
-                    {selectedRequest.status === 'pending' && (
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleStatusUpdate(selectedRequest.request_id, 'in_progress')}
-                        disabled={updating}
-                        className="flex-1 btn bg-primary-500 text-white hover:bg-primary-600"
-                      >
-                        Start Working
-                      </motion.button>
-                    )}
-                    {(selectedRequest.status === 'pending' || selectedRequest.status === 'in_progress') && (
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleStatusUpdate(selectedRequest.request_id, 'completed')}
-                        disabled={updating}
-                        className="flex-1 btn bg-mint-500 text-white hover:bg-mint-600"
-                      >
-                        Mark Complete
-                      </motion.button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </Modal>
       </div>
     </div>
   )

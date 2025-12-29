@@ -30,6 +30,7 @@ erDiagram
         string full_name
         string phone
         enum role "guest|staff|admin"
+        enum role_type "front_desk|housekeeping|food_beverage|maintenance|concierge|spa|manager"
         int branch_id FK
         bool is_verified
         string verification_token
@@ -143,7 +144,7 @@ erDiagram
         int request_id PK
         int booking_id FK
         int user_id FK
-        enum service_type "room_service|housekeeping|maintenance|concierge|laundry|spa|other"
+        enum service_type "room_service|housekeeping|maintenance|concierge|laundry|spa|dining|transport|pool|other"
         text description
         enum status "pending|in_progress|completed|cancelled"
         enum priority "low|medium|high|urgent"

@@ -17,6 +17,10 @@ class User(db.Model):
     full_name = db.Column(db.String(150), nullable=False)
     phone = db.Column(db.String(20))
     role = db.Column(db.Enum('guest', 'staff', 'admin', name='user_role'), default='guest')
+    role_type = db.Column(
+        db.Enum('front_desk', 'housekeeping', 'food_beverage', 'maintenance', 'concierge', 'spa', 'manager', name='staff_role_type'),
+        nullable=True
+    )  # Only applicable for staff users
     branch_id = db.Column(db.Integer, db.ForeignKey('Branch.branch_id', ondelete='SET NULL'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -83,6 +87,7 @@ class User(db.Model):
             'full_name': self.full_name,
             'phone': self.phone,
             'role': self.role,
+            'role_type': self.role_type,
             'branch_id': self.branch_id,
             'is_verified': self.is_verified,
             'is_active': self.is_active,

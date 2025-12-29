@@ -5,6 +5,7 @@ import { serviceRequestAPI, bookingAPI } from '../../services/api'
 import { format } from 'date-fns'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
+import { formatBookingRef } from '../../utils/helpers'
 
 const ServiceRequestsPage = () => {
   const { user } = useAuth()
@@ -157,7 +158,7 @@ const ServiceRequestsPage = () => {
                   >
                     {bookings.map(booking => (
                       <option key={booking.booking_id} value={booking.booking_id}>
-                        Room {booking.room?.room_number} - {booking.branch?.name}
+                        Room {booking.room?.room_number} • {formatBookingRef(booking.booking_id)} • {booking.branch?.name}
                       </option>
                     ))}
                   </select>
@@ -175,13 +176,22 @@ const ServiceRequestsPage = () => {
                   className="input"
                   required
                 >
-                  <option value="room_service">Room Service</option>
-                  <option value="housekeeping">Housekeeping</option>
-                  <option value="maintenance">Maintenance</option>
-                  <option value="concierge">Concierge</option>
-                  <option value="laundry">Laundry</option>
-                  <option value="spa">Spa</option>
-                  <option value="other">Other</option>
+                  <optgroup label="Food & Beverage">
+                    <option value="room_service">Room Service</option>
+                    <option value="dining">Restaurant Reservation</option>
+                  </optgroup>
+                  <optgroup label="Room Services">
+                    <option value="housekeeping">Housekeeping</option>
+                    <option value="laundry">Laundry & Dry Cleaning</option>
+                    <option value="maintenance">Maintenance / Repairs</option>
+                  </optgroup>
+                  <optgroup label="Guest Services">
+                    <option value="concierge">Concierge</option>
+                    <option value="transport">Airport / Tour Transport</option>
+                    <option value="pool">Swimming Pool</option>
+                    <option value="spa">Spa & Wellness</option>
+                  </optgroup>
+                  <option value="other">Other Request</option>
                 </select>
               </div>
               <div>

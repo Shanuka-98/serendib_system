@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-const ProtectedRoute = ({ children, roles = [] }) => {
+const ProtectedRoute = ({ children, roles = [], allowedRoleTypes = [] }) => {
   const { isAuthenticated, user, loading } = useAuth()
 
   if (loading) {
@@ -21,6 +21,15 @@ const ProtectedRoute = ({ children, roles = [] }) => {
 
   if (roles.length > 0 && !roles.includes(user?.role)) {
     return <Navigate to="/" replace />
+  }
+
+  if (allowedRoleTypes && allowedRoleTypes.length > 0) {
+    // If user has no role_type (e.g. guest or old admin), access might be denied if strictly enforced
+    // Assuming this prop is used mainly for staff routes where user.role === 'staff'
+    if (!user?.role_type || !allowedRoleTypes.includes(user.role_type)) {
+       // Redirect to a safe default for staff or home
+       return <Navigate to="/staff/my-tasks" replace /> 
+    }
   }
 
   return children

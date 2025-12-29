@@ -79,6 +79,7 @@ erDiagram
         string full_name
         string phone
         enum role "guest|staff|admin"
+        enum role_type "front_desk|housekeeping|food_beverage|maintenance|concierge|spa|manager"
         int branch_id FK
         bool is_verified
         string verification_token
@@ -192,7 +193,7 @@ erDiagram
         int request_id PK
         int booking_id FK
         int user_id FK
-        enum service_type "room_service|housekeeping|maintenance|concierge|laundry|spa|other"
+        enum service_type "room_service|housekeeping|maintenance|concierge|laundry|spa|dining|transport|pool|other"
         text description
         enum status "pending|in_progress|completed|cancelled"
         enum priority "low|medium|high|urgent"
@@ -262,9 +263,10 @@ After running `fix_passwords.py`:
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | `admin@serendibhotels.lk` | `admin123` |
-| Staff | `staff@serendibhotels.lk` | `Test@1234` |
-| Guest | `john.doe@example.com` | `guest123` |
+| Admin | `admin@serendibhotels.lk` | `Test@123` |
+| Staff | `staff@serendibhotels.lk` | `Test@123` |
+| Staff (All Departments) | `manager@serendibhotels.lk`, `frontdesk@serendibhotels.lk`, etc. | `Test@123` |
+| Guest | `john.doe@example.com` | `Test@123` |
 
 ## Sample Data
 
@@ -331,12 +333,36 @@ New installations using `schema.sql` already include this.
 > [!IMPORTANT]
 > If you experience any database synchronization issues or errors after these updates, the cleanest fix is to **delete your local database** and re-import `schema.sql` (or let the backend recreate it).
 
+### Role Type System (Dec 2025)
+Added staff role types for department-specific views and notifications. Run migrations in order:
+
+**Step 1: Add role_type column**
+```bash
+# In phpMyAdmin: Import database/migration_add_role_type.sql
+```
+
+**Step 2: Add staff users with role types**
+```bash
+# In phpMyAdmin: Import database/migration_add_staff_users.sql
+```
+
+This also updates the ServiceRequest `service_type` enum to include `dining` and `transport`.
+
+**New Staff Users (Password: `Test@123`):**
+| Email | Role Type | Branch |
+|-------|-----------|--------|
+| manager@serendibhotels.lk | Manager | Colombo |
+| frontdesk@serendibhotels.lk | Front Desk | Colombo |
+| housekeeping@serendibhotels.lk | Housekeeping | Colombo |
+| fnb@serendibhotels.lk | Food & Beverage | Colombo |
+| maintenance@serendibhotels.lk | Maintenance | Colombo |
+| concierge@serendibhotels.lk | Concierge | Colombo |
+| spa@serendibhotels.lk | Spa | Colombo |
+
+Additional staff for Mirissa and Kandy branches are included in the migration.
+
 ## Notes
 
 - Passwords: bcrypt hashed
 - Tax rates: Colombo 15%, Mirissa 12%, Kandy 13%
 - Loyalty: Bronze, Silver, Gold, Platinum
-
-## License
-
-© 2025 Serendib Hotels

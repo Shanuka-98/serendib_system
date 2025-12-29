@@ -1,6 +1,6 @@
 # Serendib Smart Hotel Management System - Complete Project Documentation
 
-**Last Updated:** December 28, 2025  
+**Last Updated:** December 29, 2025  
 **Overall Progress:** **100% Complete** - All Features Implemented
 
 > **Note:** This is the comprehensive project documentation. All project status, information, and recent updates are consolidated here.
@@ -99,7 +99,49 @@
 - **Stripe Payments**: Secure credit card processing using Payment Intents and Webhooks.
 - **Text.lk SMS Gateway**: SMS notifications for bookings, payments, and cancellations with admin toggle controls.
 
-## Recent Updates (December 28, 2025)
+## Recent Updates (December 29, 2025)
+
+### 🚀 Major Refactor: Staff Role Separation System
+Implemented comprehensive role-based access control (RBAC) for staff members with distinct permissions and views.
+
+**Staff Role Types Supported:**
+| Role Type | Dashboard View | Service Requests | Notifications |
+|-----------|----------------|------------------|---------------|
+| **Manager** | Full dashboard with check-ins/outs, pending requests | Full access, can assign to any staff | New service requests |
+| **Front Desk** | Full dashboard | Full access, can assign | New service requests |
+| **Housekeeping** | "My Tasks" (assigned only) | View/complete assigned tasks | Task assignments |
+| **Maintenance** | "My Tasks" (assigned only) | View/complete assigned tasks | Task assignments |
+| **Food & Beverage** | "My Tasks" (assigned only) | View/complete assigned tasks | Task assignments |
+| **Concierge** | "My Tasks" (assigned only) | View/complete assigned tasks | Task assignments |
+| **Spa** | "My Tasks" (assigned only) | View/complete assigned tasks | Task assignments |
+
+**Key Features:**
+1.  **Role-Based Dashboard**: Workers see "My Tasks" instead of all pending requests.
+2.  **Quick Actions per Role**: Workers get "My Tasks" and "My Schedule" shortcuts.
+3.  **Smart Staff Assignment**: Assignment dropdown only shows relevant staff (e.g., housekeeping request → only housekeeping staff).
+4.  **Task Workflow**: Manager assigns → Worker starts → Worker completes (with confirmation modals).
+5.  **Force Complete**: Managers have a subtle "Force Complete" link for emergencies.
+
+### 🔔 Real-Time Assignment Notifications
+-   Staff members now receive **instant toast notifications with sound** when assigned to a task.
+-   No page refresh required - uses Socket.IO for real-time updates.
+
+### 🕐 Timezone Standardization (Sri Lanka Time)
+-   All timestamps now use **Asia/Colombo (UTC+5:30)** instead of UTC.
+-   Added `get_local_time()` and `get_local_date()` helper functions.
+-   Updated models: `ServiceRequest`, `Notification`, `Booking`.
+
+### 🐛 Bug Fixes & Improvements
+1.  **Service Request Details**: Fixed "Invalid Date" display, guest name, and room number issues.
+2.  **Staff Unassign**: Fixed ability to unassign a task after initial assignment.
+3.  **Assignment Workflow**: Assigning a staff member no longer auto-changes status to "In Progress".
+4.  **Start/Complete Buttons**: Start shows only when Pending, Complete shows only when In Progress.
+5.  **Confirmation Modals**: Added confirmation dialogs before starting or completing tasks.
+6.  **Notification Routing**: Front Desk staff now receive service request notifications alongside managers.
+
+---
+
+## Previous Updates (December 28, 2025)
 
 ### 🌟 New Features
 1.  **Real-Time Notifications for Staff (Socket.IO)**:

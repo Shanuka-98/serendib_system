@@ -35,6 +35,8 @@ import RoomStatusPage from './pages/staff/RoomStatus'
 import StaffBookingsPage from './pages/staff/Bookings'
 import StaffBookingDetails from './pages/staff/BookingDetails'
 import StaffSchedulePage from './pages/staff/StaffSchedule'
+import MyTasksPage from './pages/staff/MyTasks'
+import ServiceDetailsPage from './pages/staff/ServiceDetails'
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard'
@@ -77,12 +79,28 @@ function App() {
           <Route path="/booking/cancel" element={<ProtectedRoute><BookingCancel /></ProtectedRoute>} />
           
           {/* Staff Routes */}
+          {/* Staff Dashboard - Accessible by all staff */}
           <Route path="/staff" element={<ProtectedRoute roles={['staff', 'admin']}><StaffDashboard /></ProtectedRoute>} />
-          <Route path="/staff/bookings" element={<ProtectedRoute roles={['staff', 'admin']}><StaffBookingsPage /></ProtectedRoute>} />
-          <Route path="/staff/bookings/:id" element={<ProtectedRoute roles={['staff', 'admin']}><StaffBookingDetails /></ProtectedRoute>} />
-          <Route path="/staff/check-in-out" element={<ProtectedRoute roles={['staff', 'admin']}><CheckInOutPage /></ProtectedRoute>} />
-          <Route path="/staff/services" element={<ProtectedRoute roles={['staff', 'admin']}><ServiceManagementPage /></ProtectedRoute>} />
-          <Route path="/staff/room-status" element={<ProtectedRoute roles={['staff', 'admin']}><RoomStatusPage /></ProtectedRoute>} />
+          
+          {/* My Tasks - Focused view for operational staff */}
+          <Route path="/staff/my-tasks" element={<ProtectedRoute roles={['staff', 'admin']} allowedRoleTypes={['housekeeping', 'food_beverage', 'maintenance', 'concierge', 'spa', 'security']}><MyTasksPage /></ProtectedRoute>} />
+          
+          {/* Staff Schedule - Accessible by all, but view differs */}
+          <Route path="/staff/schedule" element={<ProtectedRoute roles={['staff', 'admin']}><StaffSchedulePage /></ProtectedRoute>} />
+          <Route path="/staff/services/:id" element={<ProtectedRoute roles={['staff', 'admin']}><ServiceDetailsPage /></ProtectedRoute>} />
+
+          {/* Operations - Restricted to Manager/Front Desk */}
+          <Route path="/staff/bookings" element={<ProtectedRoute roles={['staff', 'admin']} allowedRoleTypes={['manager', 'front_desk']}><StaffBookingsPage /></ProtectedRoute>} />
+          <Route path="/staff/bookings/:id" element={<ProtectedRoute roles={['staff', 'admin']} allowedRoleTypes={['manager', 'front_desk']}><StaffBookingDetails /></ProtectedRoute>} />
+          <Route path="/staff/check-in-out" element={<ProtectedRoute roles={['staff', 'admin']} allowedRoleTypes={['manager', 'front_desk']}><CheckInOutPage /></ProtectedRoute>} />
+          
+          {/* Room Status - Broader operational access */}
+          <Route path="/staff/room-status" element={<ProtectedRoute roles={['staff', 'admin']} allowedRoleTypes={['manager', 'front_desk', 'maintenance']}><RoomStatusPage /></ProtectedRoute>} />
+          
+          {/* Services List - Restricted to Manager/Front Desk */}
+          <Route path="/staff/services" element={<ProtectedRoute roles={['staff', 'admin']} allowedRoleTypes={['manager', 'front_desk']}><ServiceManagementPage /></ProtectedRoute>} />
+          
+          {/* Schedule - Open to all staff */}
           <Route path="/staff/schedule" element={<ProtectedRoute roles={['staff', 'admin']}><StaffSchedulePage /></ProtectedRoute>} />
           
           {/* Admin Routes */}

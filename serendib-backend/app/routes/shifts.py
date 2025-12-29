@@ -249,18 +249,36 @@ def get_staff_for_scheduling():
     
     query = User.query.filter(User.role.in_(['staff', 'admin']))
     
-    if branch_id:
+    # Security: Staff/Managers can only see staff from THEIR branch
+    if current_user.role == 'staff':
+        query = query.filter_by(branch_id=current_user.branch_id)
+    elif branch_id:
+        # Admin can filter by any branch
         query = query.filter_by(branch_id=branch_id)
     
     staff = query.all()
     
-    return success_response(data={
-        'staff': [{
+    # Get active task counts
+    from app.models.service_request import ServiceRequest
+    
+    staff_data = []
+    for s in staff:
+        active_count = ServiceRequest.query.filter_by(
+            assigned_staff_id=s.user_id,
+            status='in_progress'
+        ).count()
+        
+        staff_data.append({
             'user_id': s.user_id, 
             'full_name': s.full_name, 
             'email': s.email, 
             'role': s.role,
-            'branch_id': s.branch_id
-        } for s in staff],
-        'count': len(staff)
+            'role_type': s.role_type, # Ensure role_type is returned
+            'branch_id': s.branch_id,
+            'active_tasks': active_count
+        })
+    
+    return success_response(data={
+        'staff': staff_data,
+        'count': len(staff_data)
     })

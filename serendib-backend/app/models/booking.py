@@ -5,6 +5,7 @@ Represents guest reservations and bookings
 
 from app import db
 from datetime import datetime, timedelta
+from app.utils.helpers import get_local_time, get_local_date
 
 
 class Booking(db.Model):
@@ -29,7 +30,7 @@ class Booking(db.Model):
     points_discount = db.Column(db.Numeric(10, 2), default=0)
     loyalty_discount = db.Column(db.Numeric(10, 2), default=0)
     
-    booking_date = db.Column(db.DateTime, default=datetime.utcnow)
+    booking_date = db.Column(db.DateTime, default=get_local_time)
     special_requests = db.Column(db.Text)
     number_of_guests = db.Column(db.Integer, default=1)
     cancellation_reason = db.Column(db.Text)
@@ -144,7 +145,7 @@ class Booking(db.Model):
         
         # Check cancellation policy (24 hours before check-in)
         if self.check_in_date:
-            hours_until_checkin = (datetime.combine(self.check_in_date, datetime.min.time()) - datetime.utcnow()).total_seconds() / 3600
+            hours_until_checkin = (datetime.combine(self.check_in_date, datetime.min.time()) - get_local_time()).total_seconds() / 3600
             
             if hours_until_checkin < 24:
                 return False, "Cancellation period has expired (must cancel 24 hours before check-in)"
@@ -160,7 +161,7 @@ class Booking(db.Model):
         
         self.status = 'cancelled'
         self.cancellation_reason = reason
-        self.cancelled_at = datetime.utcnow()
+        self.cancelled_at = get_local_time()
         
         # Update room status (make available if it was reserved or occupied)
         if self.room and self.room.status in ['reserved', 'occupied']:
@@ -185,12 +186,12 @@ class Booking(db.Model):
         if not completed_payment:
             return False, "Payment must be completed before check-in"
         
-        today = datetime.utcnow().date()
+        today = get_local_date()
         if self.check_in_date > today:
             return False, "Check-in date has not arrived yet"
         
         self.status = 'checked_in'
-        self.checked_in_at = datetime.utcnow()
+        self.checked_in_at = get_local_time()
         
         # Update room status
         self.room.status = 'occupied'
@@ -205,7 +206,7 @@ class Booking(db.Model):
             return False, "Only checked-in bookings can be checked out"
         
         self.status = 'checked_out'
-        self.checked_out_at = datetime.utcnow()
+        self.checked_out_at = get_local_time()
         
         # Update room status
         self.room.status = 'available'
@@ -247,7 +248,7 @@ class Booking(db.Model):
     @staticmethod
     def get_upcoming_bookings(days=7):
         """Get upcoming bookings within specified days"""
-        today = datetime.utcnow().date()
+        today = get_local_date()
         end_date = today + timedelta(days=days)
         
         return Booking.query.filter(

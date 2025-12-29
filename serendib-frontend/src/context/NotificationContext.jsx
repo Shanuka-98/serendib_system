@@ -102,7 +102,9 @@ export const NotificationProvider = ({ children }) => {
       playNotificationSound()
       
       // Show toast notification
-      const icon = data.type === 'booking' ? '🏨' : '🔔'
+      const icon = data.type === 'booking' ? '🏨' : 
+                   data.type === 'assignment' ? '📋' : 
+                   data.type === 'service' ? '🛎️' : '🔔'
       toast.info(
         <div className="flex items-start gap-2">
           <span className="text-xl">{icon}</span>

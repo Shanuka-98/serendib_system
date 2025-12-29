@@ -5,6 +5,7 @@ Represents guest service requests
 
 from app import db
 from datetime import datetime
+from app.utils.helpers import get_local_time
 
 
 class ServiceRequest(db.Model):
@@ -14,7 +15,7 @@ class ServiceRequest(db.Model):
     booking_id = db.Column(db.Integer, db.ForeignKey('Booking.booking_id', ondelete='CASCADE'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('User.user_id', ondelete='CASCADE'), nullable=False)
     service_type = db.Column(
-        db.Enum('room_service', 'housekeeping', 'maintenance', 'concierge', 'laundry', 'spa', 'other', name='service_type'),
+        db.Enum('room_service', 'housekeeping', 'maintenance', 'concierge', 'laundry', 'spa', 'dining', 'transport', 'pool', 'other', name='service_type'),
         nullable=False
     )
     description = db.Column(db.Text, nullable=False)
@@ -26,7 +27,7 @@ class ServiceRequest(db.Model):
         db.Enum('low', 'medium', 'high', 'urgent', name='service_priority'),
         default='medium'
     )
-    requested_at = db.Column(db.DateTime, default=datetime.utcnow)
+    requested_at = db.Column(db.DateTime, default=get_local_time)
     completed_at = db.Column(db.DateTime)
     assigned_staff_id = db.Column(db.Integer, db.ForeignKey('User.user_id', ondelete='SET NULL'))
     notes = db.Column(db.Text)
@@ -75,10 +76,8 @@ class ServiceRequest(db.Model):
         return data
     
     def assign_to_staff(self, staff_id):
-        """Assign request to staff member"""
+        """Assign request to staff member (does not change status)"""
         self.assigned_staff_id = staff_id
-        if self.status == 'pending':
-            self.status = 'in_progress'
         db.session.commit()
         return True
     
@@ -92,7 +91,7 @@ class ServiceRequest(db.Model):
         self.status = new_status
         
         if new_status == 'completed':
-            self.completed_at = datetime.utcnow()
+            self.completed_at = get_local_time()
         
         if notes:
             self.notes = notes
@@ -140,4 +139,23 @@ class ServiceRequest(db.Model):
             assigned_staff_id=staff_id,
             status='in_progress'
         ).order_by(ServiceRequest.priority.desc()).all()
-
+    
+    @staticmethod
+    def get_role_type_for_service(service_type):
+        """
+        Get the staff role_type that should handle a given service type.
+        Used for auto-routing notifications to relevant staff.
+        """
+        role_mapping = {
+            'room_service': 'food_beverage',
+            'dining': 'food_beverage',
+            'housekeeping': 'housekeeping',
+            'laundry': 'housekeeping',
+            'maintenance': 'maintenance',
+            'concierge': 'concierge',
+            'transport': 'concierge',
+            'pool': 'concierge',
+            'spa': 'spa',
+            'other': 'manager'  # Manager assigns manually
+        }
+        return role_mapping.get(service_type, 'manager')

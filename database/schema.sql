@@ -36,6 +36,7 @@ CREATE TABLE User (
     full_name VARCHAR(150) NOT NULL,
     phone VARCHAR(20),
     role ENUM('guest', 'staff', 'admin') DEFAULT 'guest',
+    role_type ENUM('front_desk', 'housekeeping', 'food_beverage', 'maintenance', 'concierge', 'spa', 'manager') DEFAULT NULL,
     branch_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -48,6 +49,7 @@ CREATE TABLE User (
     FOREIGN KEY (branch_id) REFERENCES Branch(branch_id) ON DELETE SET NULL,
     INDEX idx_email (email),
     INDEX idx_role (role),
+    INDEX idx_role_type (role_type),
     INDEX idx_branch (branch_id),
     INDEX idx_verification (verification_token),
     INDEX idx_reset_token (reset_token)
@@ -143,7 +145,7 @@ CREATE TABLE ServiceRequest (
     request_id INT AUTO_INCREMENT PRIMARY KEY,
     booking_id INT NOT NULL,
     user_id INT NOT NULL,
-    service_type ENUM('room_service', 'housekeeping', 'maintenance', 'concierge', 'laundry', 'spa', 'other') NOT NULL,
+    service_type ENUM('room_service', 'housekeeping', 'maintenance', 'concierge', 'laundry', 'spa', 'dining', 'transport', 'pool', 'other') NOT NULL,
     description TEXT NOT NULL,
     status ENUM('pending', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
     priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
@@ -335,20 +337,38 @@ INSERT INTO User (email, password_hash, full_name, phone, role, branch_id, is_ve
 ('manager.mirissa@serendibhotels.lk', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ztJ.WQN3MxCS', 'Saman Fernando', '+94703234567', 'admin', 2, TRUE),
 ('manager.kandy@serendibhotels.lk', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ztJ.WQN3MxCS', 'Kamala Silva', '+94704234567', 'admin', 3, TRUE);
 
--- Insert Staff Users (password: Test@1234 for demo, staff123 for others)
-INSERT INTO User (email, password_hash, full_name, phone, role, branch_id, is_verified) VALUES
-('staff@serendibhotels.lk', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ztJ.WQN3MxCS', 'Demo Staff User', '+94700000000', 'staff', 1, TRUE),
-('staff1.colombo@serendibhotels.lk', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ztJ.WQN3MxCS', 'Dilshan Jayawardena', '+94705234567', 'staff', 1, TRUE),
-('staff2.colombo@serendibhotels.lk', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ztJ.WQN3MxCS', 'Priya Rodrigo', '+94706234567', 'staff', 1, TRUE),
-('staff1.mirissa@serendibhotels.lk', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ztJ.WQN3MxCS', 'Kasun Bandara', '+94707234567', 'staff', 2, TRUE),
-('staff1.kandy@serendibhotels.lk', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ztJ.WQN3MxCS', 'Nimali Wijesinghe', '+94708234567', 'staff', 3, TRUE);
+-- Insert Staff Users with role_type (password: Test@123)
+-- Each role_type represents a different department
+INSERT INTO User (email, password_hash, full_name, phone, role, role_type, branch_id, is_verified) VALUES
+-- Manager (oversees all departments)
+('manager@serendibhotels.lk', '$2b$12$Or9mCJ9uLO5icIs8whk1hebfRIyzRkvZekvuZTG0FVMaNGWzTE/cG', 'Ruwan Wickramasinghe', '+94700000001', 'staff', 'manager', 1, TRUE),
+-- Front Desk Staff
+('frontdesk@serendibhotels.lk', '$2b$12$Or9mCJ9uLO5icIs8whk1hebfRIyzRkvZekvuZTG0FVMaNGWzTE/cG', 'Nadeesha Fernando', '+94700000002', 'staff', 'front_desk', 1, TRUE),
+-- Housekeeping Staff
+('housekeeping@serendibhotels.lk', '$2b$12$Or9mCJ9uLO5icIs8whk1hebfRIyzRkvZekvuZTG0FVMaNGWzTE/cG', 'Kumari Jayasuriya', '+94700000003', 'staff', 'housekeeping', 1, TRUE),
+-- Food & Beverage Staff
+('fnb@serendibhotels.lk', '$2b$12$Or9mCJ9uLO5icIs8whk1hebfRIyzRkvZekvuZTG0FVMaNGWzTE/cG', 'Tharanga Perera', '+94700000004', 'staff', 'food_beverage', 1, TRUE),
+-- Maintenance Staff
+('maintenance@serendibhotels.lk', '$2b$12$Or9mCJ9uLO5icIs8whk1hebfRIyzRkvZekvuZTG0FVMaNGWzTE/cG', 'Chaminda Bandara', '+94700000005', 'staff', 'maintenance', 1, TRUE),
+-- Concierge Staff
+('concierge@serendibhotels.lk', '$2b$12$Or9mCJ9uLO5icIs8whk1hebfRIyzRkvZekvuZTG0FVMaNGWzTE/cG', 'Dilini Rajapaksa', '+94700000006', 'staff', 'concierge', 1, TRUE),
+-- Spa Staff
+('spa@serendibhotels.lk', '$2b$12$Or9mCJ9uLO5icIs8whk1hebfRIyzRkvZekvuZTG0FVMaNGWzTE/cG', 'Sachini Wijewardena', '+94700000007', 'staff', 'spa', 1, TRUE),
+-- Legacy demo staff (kept for backward compatibility)
+('staff@serendibhotels.lk', '$2b$12$Or9mCJ9uLO5icIs8whk1hebfRIyzRkvZekvuZTG0FVMaNGWzTE/cG', 'Demo Staff User', '+94700000000', 'staff', 'front_desk', 1, TRUE),
+-- Mirissa Branch Staff
+('frontdesk.mirissa@serendibhotels.lk', '$2b$12$Or9mCJ9uLO5icIs8whk1hebfRIyzRkvZekvuZTG0FVMaNGWzTE/cG', 'Kasun Bandara', '+94707234567', 'staff', 'front_desk', 2, TRUE),
+('housekeeping.mirissa@serendibhotels.lk', '$2b$12$Or9mCJ9uLO5icIs8whk1hebfRIyzRkvZekvuZTG0FVMaNGWzTE/cG', 'Malika Senanayake', '+94707234568', 'staff', 'housekeeping', 2, TRUE),
+-- Kandy Branch Staff
+('frontdesk.kandy@serendibhotels.lk', '$2b$12$Or9mCJ9uLO5icIs8whk1hebfRIyzRkvZekvuZTG0FVMaNGWzTE/cG', 'Nimali Wijesinghe', '+94708234567', 'staff', 'front_desk', 3, TRUE),
+('maintenance.kandy@serendibhotels.lk', '$2b$12$Or9mCJ9uLO5icIs8whk1hebfRIyzRkvZekvuZTG0FVMaNGWzTE/cG', 'Suresh Gunawardena', '+94708234568', 'staff', 'maintenance', 3, TRUE);
 
--- Insert Guest Users (password: guest123)
+-- Insert Guest Users (password: Test@123)
 INSERT INTO User (email, password_hash, full_name, phone, role, is_verified) VALUES
-('john.doe@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ztJ.WQN3MxCS', 'John Doe', '+1234567890', 'guest', TRUE),
-('jane.smith@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ztJ.WQN3MxCS', 'Jane Smith', '+1234567891', 'guest', TRUE),
-('robert.johnson@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ztJ.WQN3MxCS', 'Robert Johnson', '+1234567892', 'guest', TRUE),
-('emily.williams@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5ztJ.WQN3MxCS', 'Emily Williams', '+1234567893', 'guest', TRUE);
+('john.doe@example.com', '$2b$12$Or9mCJ9uLO5icIs8whk1hebfRIyzRkvZekvuZTG0FVMaNGWzTE/cG', 'John Doe', '+1234567890', 'guest', TRUE),
+('jane.smith@example.com', '$2b$12$Or9mCJ9uLO5icIs8whk1hebfRIyzRkvZekvuZTG0FVMaNGWzTE/cG', 'Jane Smith', '+1234567891', 'guest', TRUE),
+('robert.johnson@example.com', '$2b$12$Or9mCJ9uLO5icIs8whk1hebfRIyzRkvZekvuZTG0FVMaNGWzTE/cG', 'Robert Johnson', '+1234567892', 'guest', TRUE),
+('emily.williams@example.com', '$2b$12$Or9mCJ9uLO5icIs8whk1hebfRIyzRkvZekvuZTG0FVMaNGWzTE/cG', 'Emily Williams', '+1234567893', 'guest', TRUE);
 
 -- Insert Staff Records
 INSERT INTO Staff (user_id, branch_id, position, department, hire_date, employee_id, schedule) VALUES

@@ -11,6 +11,22 @@ from flask import jsonify, request
 from flask_jwt_extended import get_jwt_identity
 from app.models.user import User
 
+# Sri Lanka Timezone (Asia/Colombo, UTC+5:30)
+SL_TIMEZONE_OFFSET = timedelta(hours=5, minutes=30)
+
+
+def get_local_time():
+    """
+    Get current time in Sri Lanka timezone (Asia/Colombo).
+    Use this instead of datetime.utcnow() throughout the application.
+    """
+    return datetime.utcnow() + SL_TIMEZONE_OFFSET
+
+
+def get_local_date():
+    """Get current date in Sri Lanka timezone."""
+    return get_local_time().date()
+
 
 def generate_token(length=32):
     """Generate a random secure token"""

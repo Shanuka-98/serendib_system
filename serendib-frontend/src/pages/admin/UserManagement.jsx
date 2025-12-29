@@ -240,6 +240,15 @@ const UserManagement = () => {
                 )
               },
               {
+                key: 'role_type',
+                label: 'Department',
+                render: (roleType, user) => user.role === 'staff' && roleType ? (
+                  <span className="text-sm text-gray-600 capitalize">
+                    {roleType.replace('_', ' ')}
+                  </span>
+                ) : <span className="text-sm text-gray-400">-</span>
+              },
+              {
                 key: 'branch',
                 label: 'Branch',
                 render: (branch) => branch ? (
@@ -326,6 +335,7 @@ const UserEditModal = ({ user, onClose, onSave }) => {
     full_name: '',
     phone: '',
     role: user?.role || 'guest',
+    role_type: user?.role_type || '',
     is_active: user?.is_active !== undefined ? user.is_active : true,
     branch_id: user?.branch_id || ''
   })
@@ -354,6 +364,7 @@ const UserEditModal = ({ user, onClose, onSave }) => {
       } else {
         await onSave({
           role: formData.role,
+          role_type: formData.role === 'staff' ? formData.role_type : null,
           is_active: formData.is_active,
           branch_id: formData.branch_id || null
         }, false)
@@ -454,7 +465,7 @@ const UserEditModal = ({ user, onClose, onSave }) => {
             </label>
             <select
               value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value, role_type: e.target.value === 'staff' ? formData.role_type : '' })}
               className="input"
               required
             >
@@ -463,6 +474,31 @@ const UserEditModal = ({ user, onClose, onSave }) => {
               <option value="admin">Admin</option>
             </select>
           </div>
+
+          {/* Role Type - Only shown for staff users */}
+          {formData.role === 'staff' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Department / Role Type
+              </label>
+              <select
+                value={formData.role_type}
+                onChange={(e) => setFormData({ ...formData, role_type: e.target.value })}
+                className="input"
+                required
+              >
+                <option value="">Select Department</option>
+                <option value="manager">Manager (All Departments)</option>
+                <option value="front_desk">Front Desk</option>
+                <option value="housekeeping">Housekeeping</option>
+                <option value="food_beverage">Food & Beverage</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="concierge">Concierge</option>
+                <option value="spa">Spa & Wellness</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Staff will receive notifications for their department</p>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -5,6 +5,7 @@ Represents user notifications
 
 from app import db
 from datetime import datetime
+from app.utils.helpers import get_local_time
 
 
 class Notification(db.Model):
@@ -18,7 +19,7 @@ class Notification(db.Model):
         nullable=False
     )
     is_read = db.Column(db.Boolean, default=False)
-    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    sent_at = db.Column(db.DateTime, default=get_local_time)
     related_id = db.Column(db.Integer)
     action_url = db.Column(db.String(255))
     

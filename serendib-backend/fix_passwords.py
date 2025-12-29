@@ -2,12 +2,7 @@
 Fix Password Hashes Script
 Run this script after importing schema.sql to fix all password hashes.
 
-This script will update all user passwords with correct bcrypt hashes.
-Default passwords:
-- Admin: admin123
-- Staff (demo): Test@1234 (staff@serendibhotels.lk)
-- Staff (others): staff123
-- Guest: guest123
+This script will update all user passwords to Test@123 (consistent for all users).
 """
 
 import sys
@@ -20,7 +15,7 @@ from app import create_app, db, bcrypt
 from app.models.user import User
 
 def fix_passwords():
-    """Fix all password hashes in the database"""
+    """Fix all password hashes in the database to Test@123"""
     app = create_app()
     
     with app.app_context():
@@ -37,29 +32,14 @@ def fix_passwords():
         
         print(f"\n📋 Found {len(users)} users to update\n")
         
-        # Password mapping based on role
-        password_map = {
-            'admin': 'admin123',
-            'staff': 'staff123',
-            'guest': 'guest123'
-        }
-        
-        # Special password for demo staff user
-        demo_staff_email = 'staff@serendibhotels.lk'
-        demo_staff_password = 'Test@1234'
+        # Use single password for all users
+        password = 'Test@123'
         
         updated_count = 0
         error_count = 0
         
         for user in users:
             try:
-                # Check if this is the demo staff user
-                if user.email == demo_staff_email:
-                    password = demo_staff_password
-                else:
-                    # Get password based on role
-                    password = password_map.get(user.role, 'guest123')
-                
                 # Generate new password hash
                 new_hash = bcrypt.generate_password_hash(password).decode('utf-8')
                 
@@ -69,7 +49,8 @@ def fix_passwords():
                 # Verify the password works
                 if user.check_password(password):
                     updated_count += 1
-                    print(f"✅ {user.role.upper():6} | {user.email:40} | Password: {password}")
+                    role_type_str = f" ({user.role_type})" if user.role_type else ""
+                    print(f"✅ {user.role.upper():6}{role_type_str:20} | {user.email:40}")
                 else:
                     error_count += 1
                     print(f"❌ {user.role.upper():6} | {user.email:40} | Failed to verify")
@@ -86,10 +67,13 @@ def fix_passwords():
             if error_count > 0:
                 print(f"⚠️  {error_count} errors occurred")
             print("=" * 60)
-            print("\n📝 Test Credentials:")
-            print("   Admin: admin@serendibhotels.lk / admin123")
-            print("   Staff: staff@serendibhotels.lk / Test@1234")
-            print("   Guest: john.doe@example.com / guest123")
+            print("\n📝 All accounts use password: Test@123")
+            print("\n   Example logins:")
+            print("   Admin:       admin@serendibhotels.lk")
+            print("   Manager:     manager@serendibhotels.lk")
+            print("   Front Desk:  frontdesk@serendibhotels.lk")
+            print("   Housekeeping: housekeeping@serendibhotels.lk")
+            print("   Guest:       john.doe@example.com")
             print("\n")
         except Exception as e:
             db.session.rollback()
