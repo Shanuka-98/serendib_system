@@ -30,6 +30,7 @@ const BranchManagement = () => {
     city: '',
     address: '',
     tax_rate: '',
+    service_charge_rate: '',
     contact_phone: '',
     contact_email: '',
   })
@@ -59,6 +60,7 @@ const BranchManagement = () => {
       city: branch.city || '',
       address: branch.address || '',
       tax_rate: branch.tax_rate?.toString() || '',
+      service_charge_rate: branch.service_charge_rate?.toString() || '10',
       contact_phone: branch.contact_info?.phone || '',
       contact_email: branch.contact_info?.email || '',
     })
@@ -80,6 +82,7 @@ const BranchManagement = () => {
         city: editForm.city,
         address: editForm.address,
         tax_rate: parseFloat(editForm.tax_rate),
+        service_charge_rate: parseFloat(editForm.service_charge_rate),
         contact_info: {
           phone: editForm.contact_phone,
           email: editForm.contact_email,
@@ -260,10 +263,18 @@ const BranchManagement = () => {
                     </div>
                   </div>
 
-                  {/* Tax Rate */}
-                  <div className="flex items-center justify-between mt-4">
-                    <span className="text-sm text-gray-600">Tax Rate</span>
-                    <span className="text-sm font-semibold text-gray-800">{branch.tax_rate}%</span>
+                  {/* Rates */}
+                  <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Tax Rate</span>
+                      <span className="badge badge-lavender">{branch.tax_rate}%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Service Charge</span>
+                      <span className="badge badge-warning">
+                        {branch.service_charge_rate ? parseFloat(branch.service_charge_rate).toFixed(1) : '10.0'}%
+                      </span>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -337,6 +348,26 @@ const BranchManagement = () => {
                   />
                   <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Service Charge (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    name="service_charge_rate"
+                    value={editForm.service_charge_rate}
+                    onChange={handleEditChange}
+                    className="input pr-10"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                  />
+                  <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Default is 10%</p>
               </div>
             </div>
 

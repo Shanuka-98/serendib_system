@@ -42,8 +42,15 @@ def register_socket_events(socketio):
             elif user.role == 'staff':
                 # Staff join their branch-specific room
                 if user.branch_id:
+                    # Join general branch room
                     join_room(f'branch_{user.branch_id}')
                     print(f"[Socket.IO] {user.full_name} (staff) connected to branch_{user.branch_id}")
+                    
+                    # Join role-specific branch room (e.g. branch_1_manager, branch_1_concierge)
+                    if user.role_type:
+                        room_name = f'branch_{user.branch_id}_{user.role_type}'
+                        join_room(room_name)
+                        print(f"[Socket.IO] User joined role room: {room_name}")
                 else:
                     # Fallback if no branch assigned
                     join_room('staff_notifications')

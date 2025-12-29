@@ -66,11 +66,25 @@ class Room(db.Model):
         elif image_urls is None:
             image_urls = []
         
+        # Get branch-specific rates
+        tax_rate = 0.12
+        service_charge_rate = 0.10
+        try:
+            if self.branch:
+                # Tax rate is stored as percentage (e.g. 15.00), convert to decimal
+                tax_rate = float(self.branch.tax_rate) / 100 if self.branch.tax_rate else 0.12
+                # Service charge is stored as decimal string (e.g. '0.10')
+                service_charge_rate = float(self.branch.get_config('service_charge_rate', '0.10'))
+        except Exception as e:
+            print(f"Warning: Could not load rates for room {self.room_id}: {str(e)}")
+
         data = {
             'room_id': self.room_id,
             'branch_id': self.branch_id,
             'branch_name': branch_name,
             'branch_city': branch_city,
+            'tax_rate': tax_rate,
+            'service_charge_rate': service_charge_rate,
             'room_number': self.room_number,
             'room_type': self.room_type,
             'capacity': self.capacity,

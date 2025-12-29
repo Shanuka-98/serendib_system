@@ -91,6 +91,9 @@ def register_blueprints(app):
     app.register_blueprint(promotions_bp, url_prefix='/api/promotions')
     app.register_blueprint(shifts_bp, url_prefix='/api/shifts')
     
+    from app.routes.services import services_bp
+    app.register_blueprint(services_bp, url_prefix='/api/admin/services')
+    
     @app.route('/api/health')
     def health_check():
         return jsonify({'status': 'healthy', 'service': 'Serendib Hotels API', 'version': '1.0.0'}), 200

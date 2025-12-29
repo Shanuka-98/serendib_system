@@ -30,7 +30,7 @@
 
 #### Database (MySQL)
 - `database/schema.sql` - Complete schema with **13 tables** and proper relationships.
-- **Recent Update:** Added `Shift` table for staff scheduling.
+- **Recent Update:** Added `Shift` table for scheduling and **Service Pricing** columns (`price`, `is_chargeable`) to `ServiceRequest`.
 - Models for Branch, User, Room, Booking, Payment, ServiceRequest, Notification, Staff, LoyaltyProgram, LoyaltyHistory, AuditLog, PropertyConfig, Promotion, **Shift**.
 - 3 active branches (Colombo, Mirissa, Kandy).
 
@@ -138,6 +138,24 @@ Implemented comprehensive role-based access control (RBAC) for staff members wit
 4.  **Start/Complete Buttons**: Start shows only when Pending, Complete shows only when In Progress.
 5.  **Confirmation Modals**: Added confirmation dialogs before starting or completing tasks.
 6.  **Notification Routing**: Front Desk staff now receive service request notifications alongside managers.
+
+### 💰 Service Management & Payment Refinements (Dec 29)
+1.  **Dynamic Service Catalog**:
+    -   **Admin**: Full CRUD for services (Create/Edit Types like "Yoga", "Spa", "Tours").
+    -   **Guest**: Dynamic service request form fetches options & real-time prices from API.
+    -   **Logic**: Automatic Department routing (e.g., "Room Service" -> F&B, "Repair" -> Maintenance).
+2.  **Transparent Billing System**:
+    -   **Breakdown**: Booking Summary now explicitly lists Room Charge, Service Charge (10%), and Tax (12%).
+    -   **Checkout Calculation**: Service charges are efficiently calculated and applied at the final checkout step.
+    -   **Dynamic Bills**: Room booking bills automatically include service charges when they use services.
+    -   **Logic**: Backend `calculate_booking_amount` updated for precise float/decimal handling.
+    -   **Status**: Smart "Paid" vs "Due" status based on real-time balance.
+3.  **Refined Staff Notifications**:
+    -   **Smart Alerts**: "New Booking" notifications restricted to **Manager** and **Front Desk** only.
+    -   **Strict Tasks**: "My Tasks" dashboard widget now strictly shows **explicitly assigned** tasks only (no pool clutter).
+4.  **Professional Receipts**:
+    -   **Print Layout**: CSS `@media print` optimization for clean, single-page guest receipts.
+    -   **Hiding**: Auto-hides Navbar, Footer, and Sidebar buttons during print.
 
 ---
 

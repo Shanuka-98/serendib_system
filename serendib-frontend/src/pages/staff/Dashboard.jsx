@@ -61,27 +61,35 @@ const StaffDashboard = () => {
       // Fetch service requests
       const requestsResponse = await serviceRequestAPI.getRequests({ status: 'pending' })
       const requestsData = requestsResponse.data.data
-      let requests = Array.isArray(requestsData) ? requestsData : (requestsData?.requests || [])
+      const allPendingRequests = Array.isArray(requestsData) ? requestsData : (requestsData?.service_requests || [])
+      
+      // Keep a copy of filtered requests for the "Pending Requests" widget
+      let filteredPendingRequests = [...allPendingRequests]
 
-      // Filter requests based on user role
+      // Filter requests based on user role (for the general list)
       if (user?.role_type && user.role_type !== 'manager' && user.role_type !== 'front_desk') {
         const allowedServices = getDepartmentServices(user.role_type)
         if (allowedServices.length > 0) {
-          requests = requests.filter(r => allowedServices.includes(r.service_type))
+          filteredPendingRequests = filteredPendingRequests.filter(r => allowedServices.includes(r.service_type))
         }
       }
 
-      // For worker roles, also fetch tasks assigned to them
+      // For worker roles, fetch tasks assigned to them
       let assignedTasks = []
       if (user?.role_type && !['manager', 'front_desk'].includes(user.role_type)) {
+        // 1. Get In-Progress tasks
         const assignedRes = await serviceRequestAPI.getRequests({ status: 'in_progress' })
         const assignedData = assignedRes.data.data
-        const allAssigned = Array.isArray(assignedData) ? assignedData : (assignedData?.service_requests || [])
-        // Filter for tasks assigned to current user
-        assignedTasks = allAssigned.filter(t => t.assigned_staff_id === user.user_id)
-        // Also add pending tasks assigned to them
-        const pendingAssigned = requests.filter(r => r.assigned_staff_id === user.user_id)
-        assignedTasks = [...pendingAssigned, ...assignedTasks]
+        const allInProgress = Array.isArray(assignedData) ? assignedData : (assignedData?.service_requests || [])
+        
+        // Combine all active tasks (Pending + In Progress)
+        const allActive = [...allPendingRequests, ...allInProgress]
+
+        // Apply "My Tasks" Logic (Strict):
+        // Only show tasks EXPLICITLY assigned to me.
+        // Unassigned department tasks (Pool) are viewable in the full "My Tasks" page, but not on the immediate dashboard widget.
+        
+        assignedTasks = allActive.filter(r => r.assigned_staff_id === user.user_id)
       }
 
       // Count upcoming bookings
@@ -92,7 +100,7 @@ const StaffDashboard = () => {
       setStats({
         todayCheckIns: checkIns.length,
         todayCheckOuts: checkOuts.length,
-        pendingRequests: isWorkerRole ? assignedTasks.length : requests.length,
+        pendingRequests: isWorkerRole ? assignedTasks.length : filteredPendingRequests.length,
         upcomingBookings: upcomingBookings.length
       })
       
@@ -104,7 +112,7 @@ const StaffDashboard = () => {
         return checkInDate && format(new Date(checkInDate), 'yyyy-MM-dd') !== today
       })
       setUpcomingBookingsList(futureBookings.slice(0, 5))
-      setPendingRequests(requests.slice(0, 5))
+      setPendingRequests(filteredPendingRequests.slice(0, 5))
       setMyTasks(assignedTasks.slice(0, 5))
     } catch (error) {
       console.error('Error fetching dashboard data:', error)

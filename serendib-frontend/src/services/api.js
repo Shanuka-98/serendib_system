@@ -125,6 +125,7 @@ export const bookingAPI = {
   checkIn: (id, data) => api.post(`/bookings/${id}/checkin`, data),
   checkOut: (id) => api.post(`/bookings/${id}/checkout`),
   getUpcoming: (days) => api.get('/bookings/upcoming', { params: { days } }),
+  getBill: (id) => api.get(`/bookings/${id}/bill`),
 }
 
 // Payment API - process transactions and handle refunds
@@ -203,7 +204,6 @@ export const promotionsAPI = {
   getPromotions: (params) => api.get('/promotions', { params }),
   createPromotion: (data) => api.post('/promotions', data),
   updatePromotion: (id, data) => api.put(`/promotions/${id}`, data),
-  deletePromotion: (id) => api.delete(`/promotions/${id}`),
   validatePromoCode: (data) => api.post('/promotions/validate', data),
 }
 
@@ -214,4 +214,12 @@ export const shiftsAPI = {
   updateShift: (id, data) => api.put(`/shifts/${id}`, data),
   deleteShift: (id) => api.delete(`/shifts/${id}`),
   getStaffForScheduling: (params) => api.get('/shifts/staff', { params }),
+}
+
+// Service Catalog API - Admin management of service types
+export const serviceAPI = {
+  getServices: () => api.get('/admin/services'),
+  createService: (data) => api.post('/admin/services', data),
+  updateService: (id, data) => api.put(`/admin/services/${id}`, data),
+  deleteService: (id) => api.delete(`/admin/services/${id}`),
 }

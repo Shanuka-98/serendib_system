@@ -51,18 +51,14 @@ const MyTasksPage = () => {
       const isManager = user?.role_type === 'manager' || user?.role_type === 'front_desk'
 
       if (user?.role_type && !isManager) {
-         myTasks = allRequests.filter(r => {
-            // My direct assignments
-            if (r.assigned_staff_id === user.user_id) return true
-            
-            // Pool items (unassigned AND my department)
-            if (!r.assigned_staff_id && allowedServices.includes(r.service_type)) return true
-            
-            return false
-         })
+         // Strict Logic: Only show tasks EXPLICITLY assigned to me.
+         // Pool tasks (unassigned) are now excluded per user request.
+         myTasks = allRequests.filter(r => r.assigned_staff_id === user.user_id)
       } else if (allowedServices.length > 0 && !isManager) {
-         // Fallback for non-manager roles without user_id? (unlikely)
-         myTasks = allRequests.filter(r => allowedServices.includes(r.service_type))
+         // Fallback for role-based viewing if no specific user assignments found (though the strict filter above handles standard cases)
+         // Keeping this for safety if logic evolves, but effectively we want strict assignment.
+         // For now, let's keep it consistent:
+         myTasks = allRequests.filter(r => r.assigned_staff_id === user.user_id)
       }
       // Managers see everything (or we could filter by branch if needed, but currently seeing all is fine for oversight)
 

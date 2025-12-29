@@ -37,11 +37,13 @@ def create_booking_notification(booking, guest_user):
     branch_name = booking.branch.name if booking.branch else 'Unknown'
     booking_ref = format_booking_ref(booking.booking_id)
     
-    # Get staff users for this branch only
-    # NOTE: To include admins in notifications, add: db.or_(..., User.role == 'admin')
-    # Currently disabled for admins as they don't use booking/service notifications
+    # Get staff users for this branch only (Manager and Front Desk only)
     staff_users = User.query.filter(
-        db.and_(User.role == 'staff', User.branch_id == branch_id)
+        db.and_(
+            User.role == 'staff', 
+            User.branch_id == branch_id,
+            User.role_type.in_(['manager', 'front_desk'])
+        )
     ).all()
     
     message = f"New booking {booking_ref} by {guest_user.full_name} for Room {booking.room.room_number} ({branch_name})"
@@ -62,7 +64,7 @@ def create_booking_notification(booking, guest_user):
     
     db.session.commit()
     
-    # Emit real-time notification to branch-specific room and admin room
+    # Emit real-time notification to branch-specific role rooms
     if notifications:
         notification_data = {
             'type': 'booking',
@@ -78,8 +80,15 @@ def create_booking_notification(booking, guest_user):
             'check_in': booking.check_in_date.isoformat() if booking.check_in_date else None,
             'check_out': booking.check_out_date.isoformat() if booking.check_out_date else None
         }
-        # Emit to branch-specific room
-        emit_to_branch(branch_id, notification_data)
+        
+        # Emit to managers and front desk only
+        try:
+            socketio = get_socketio()
+            socketio.emit('new_notification', notification_data, room=f'branch_{branch_id}_manager')
+            socketio.emit('new_notification', notification_data, room=f'branch_{branch_id}_front_desk')
+            print(f"[Notification] Emitted booking alert to {branch_name} (Mgr/FD)")
+        except Exception as e:
+            print(f"[Notification] Error emitting booking alert: {str(e)}")
     
     return notifications
 

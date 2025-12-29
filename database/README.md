@@ -44,6 +44,21 @@ python fix_passwords.py
 | **Promotion** | Discount codes |
 | **Shift** | Staff schedule assignments |
 
+### Recent Schema Updates
+- **Service Pricing:** Added `price`, `is_chargeable`, `is_billed`, `billed_at` to `ServiceRequest` table for itemized billing.
+
+## Migration Notes
+If you are updating an existing database, run the consolidated migration script:
+
+```bash
+mysql -u root -p serendib_hotels < migration_add_dynamic_services.sql
+```
+
+This script will:
+1. Add pricing columns to `ServiceRequest` (if missing).
+2. Create and populate the `ServiceType` catalog.
+3. Update `ServiceRequest` to support dynamic types.
+
 ## Entity Relationship Diagram
 
 ```mermaid

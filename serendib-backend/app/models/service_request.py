@@ -14,10 +14,7 @@ class ServiceRequest(db.Model):
     request_id = db.Column(db.Integer, primary_key=True)
     booking_id = db.Column(db.Integer, db.ForeignKey('Booking.booking_id', ondelete='CASCADE'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('User.user_id', ondelete='CASCADE'), nullable=False)
-    service_type = db.Column(
-        db.Enum('room_service', 'housekeeping', 'maintenance', 'concierge', 'laundry', 'spa', 'dining', 'transport', 'pool', 'other', name='service_type'),
-        nullable=False
-    )
+    service_type = db.Column(db.String(50), nullable=False)
     description = db.Column(db.Text, nullable=False)
     status = db.Column(
         db.Enum('pending', 'in_progress', 'completed', 'cancelled', name='service_status'),
@@ -31,6 +28,12 @@ class ServiceRequest(db.Model):
     completed_at = db.Column(db.DateTime)
     assigned_staff_id = db.Column(db.Integer, db.ForeignKey('User.user_id', ondelete='SET NULL'))
     notes = db.Column(db.Text)
+    
+    # Pricing fields
+    price = db.Column(db.Numeric(10, 2), default=0.00)
+    is_chargeable = db.Column(db.Boolean, default=False)
+    is_billed = db.Column(db.Boolean, default=False)
+    billed_at = db.Column(db.DateTime)
     
     # Relationships
     assigned_staff = db.relationship('User', foreign_keys=[assigned_staff_id], backref='assigned_requests')
@@ -60,8 +63,20 @@ class ServiceRequest(db.Model):
             'requested_at': self.requested_at.isoformat() if self.requested_at else None,
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,
             'assigned_staff_id': self.assigned_staff_id,
-            'notes': self.notes
+            'notes': self.notes,
+            'price': float(self.price) if self.price else 0,
+            'is_chargeable': self.is_chargeable,
+            'is_billed': self.is_billed,
+            'billed_at': self.billed_at.isoformat() if self.billed_at else None
         }
+        
+        # Add display name if available from ServiceType
+        from app.models.service_type import ServiceType
+        st = ServiceType.query.filter_by(code=self.service_type).first()
+        if st:
+            data['service_type_display'] = st.name
+        else:
+            data['service_type_display'] = self.service_type.replace('_', ' ').title()
         
         if include_relations:
             if self.user:
@@ -92,12 +107,31 @@ class ServiceRequest(db.Model):
         
         if new_status == 'completed':
             self.completed_at = get_local_time()
+            # Auto-bill chargeable services on completion
+            if self.is_chargeable and not self.is_billed:
+                self.is_billed = True
+                self.billed_at = get_local_time()
         
         if notes:
             self.notes = notes
         
         db.session.commit()
         return True, f"Status updated to {new_status}"
+    
+    def set_pricing(self):
+        """Set pricing based on service type from Database"""
+        from app.models.service_type import ServiceType
+        
+        # Look up service type in catalog
+        service_type_obj = ServiceType.query.filter_by(code=self.service_type).first()
+        
+        if service_type_obj:
+            self.is_chargeable = service_type_obj.is_chargeable
+            self.price = service_type_obj.base_price
+        else:
+            # Fallback for unknown/legacy types (keep defaults safe)
+            self.is_chargeable = False
+            self.price = 0.00
     
     def complete(self, notes=None):
         """Mark request as completed"""

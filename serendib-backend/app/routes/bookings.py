@@ -154,12 +154,16 @@ def create_booking():
         return error_response(f'Number of guests exceeds room capacity ({room.capacity})', status_code=400)
     
     try:
+        # Get service charge rate
+        service_charge_rate = float(room.branch.get_config('service_charge_rate', '0.10'))
+        
         # Calculate base amount
         amount_details = calculate_booking_amount(
             room.price_per_night,
             check_in_date,
             check_out_date,
-            room.branch.tax_rate
+            room.branch.tax_rate,
+            service_charge_rate
         )
         
         # Initialize discount tracking
@@ -198,8 +202,12 @@ def create_booking():
             discounted_subtotal = 0
         
         # Recalculate tax on discounted amount
-        tax_amount = discounted_subtotal * float(room.branch.tax_rate) / 100
-        final_total = discounted_subtotal + tax_amount
+        # Service charge is calculated on the discounted subtotal
+        service_charge = discounted_subtotal * service_charge_rate
+        taxable_amount = discounted_subtotal + service_charge
+        tax_amount = taxable_amount * float(room.branch.tax_rate) / 100
+        
+        final_total = discounted_subtotal + service_charge + tax_amount
         
         # Create booking
         booking = Booking(
@@ -344,11 +352,13 @@ def update_booking(booking_id):
             booking.check_out_date = new_check_out
             
             # Recalculate amount
+            service_charge_rate = float(booking.room.branch.get_config('service_charge_rate', '0.10'))
             amount_details = calculate_booking_amount(
                 booking.room.price_per_night,
                 new_check_in,
                 new_check_out,
-                booking.branch.tax_rate
+                booking.branch.tax_rate,
+                service_charge_rate
             )
             booking.total_amount = amount_details['total']
         
@@ -612,3 +622,121 @@ def get_upcoming_bookings():
         'count': len(bookings)
     })
 
+
+@bookings_bp.route('/<int:booking_id>/bill', methods=['GET'])
+@jwt_required()
+def get_booking_bill(booking_id):
+    """
+    Get itemized bill for a booking (for checkout)
+    
+    Returns room charges, service charges, taxes, and balance due
+    """
+    from app.models.service_request import ServiceRequest
+    
+    current_user = get_current_user()
+    booking = Booking.query.get(booking_id)
+    
+    if not booking:
+        return error_response('Booking not found', status_code=404)
+    
+    # Check permission
+    if current_user.role == 'guest' and booking.user_id != current_user.user_id:
+        return error_response('Unauthorized', status_code=403)
+    elif current_user.role == 'staff' and booking.branch_id != current_user.branch_id:
+        return error_response('Unauthorized', status_code=403)
+    
+    # Calculate nights
+    nights = (booking.check_out_date - booking.check_in_date).days
+    if nights < 1:
+        nights = 1
+    
+    # Room charges
+    room_rate = float(booking.room.price_per_night) if booking.room else 0
+    room_total = room_rate * nights
+    
+    # Get billed services
+    services = ServiceRequest.query.filter_by(
+        booking_id=booking_id,
+        is_billed=True
+    ).order_by(ServiceRequest.completed_at).all()
+    
+    service_items = []
+    services_total = 0
+    for svc in services:
+        price = float(svc.price) if svc.price else 0
+        services_total += price
+        service_items.append({
+            'request_id': svc.request_id,
+            'type': svc.service_type.replace('_', ' ').title(),
+            'description': svc.description[:50] if svc.description else '',
+            'date': svc.completed_at.strftime('%Y-%m-%d') if svc.completed_at else None,
+            'price': price
+        })
+    
+    # Tax rates from branch
+    tax_rate = float(booking.room.branch.tax_rate) / 100 if booking.room and booking.room.branch else 0.13
+    
+    # Service Charge (Dynamic via PropertyConfig)
+    service_charge_rate = 0.10 # Default
+    if booking.room and booking.room.branch:
+        # get_config returns string, so we cast to float
+        sc_config = booking.room.branch.get_config('service_charge_rate', '0.10')
+        try:
+            service_charge_rate = float(sc_config)
+        except (ValueError, TypeError):
+            service_charge_rate = 0.10
+    
+    # Calculations
+    subtotal = room_total + services_total
+    service_charge = subtotal * service_charge_rate
+    taxable_amount = subtotal + service_charge
+    tax = taxable_amount * tax_rate
+    grand_total = subtotal + service_charge + tax
+    
+    # what's been paid
+    payment = booking.payments.filter_by(payment_status='completed').first()
+    prepaid = float(booking.total_amount) if payment else 0
+    
+    balance_due = max(0, grand_total - prepaid)
+    
+    # Format booking reference
+    booking_year = booking.booking_date.year if booking.booking_date else 2025
+    booking_ref = f"SER-{booking_year}-{str(booking.booking_id).zfill(6)}"
+    
+    bill_data = {
+        'booking_ref': booking_ref,
+        'booking_id': booking.booking_id,
+        'guest_name': booking.user.full_name if booking.user else 'Guest',
+        'guest_email': booking.user.email if booking.user else None,
+        'guest_phone': booking.user.phone if booking.user else None,
+        'room_number': booking.room.room_number if booking.room else 'N/A',
+        'room_type': booking.room.room_type if booking.room else 'N/A',
+        'branch_name': booking.room.branch.name if booking.room and booking.room.branch else 'Serendib Hotels',
+        'stay': {
+            'check_in': booking.check_in_date.strftime('%Y-%m-%d'),
+            'check_out': booking.check_out_date.strftime('%Y-%m-%d'),
+            'nights': nights
+        },
+        'room_charges': {
+            'per_night': room_rate,
+            'nights': nights,
+            'total': room_total,
+            'paid': bool(payment)
+        },
+        'services': service_items,
+        'services_total': services_total,
+        'service_charge_rate': service_charge_rate,
+        'tax_rate': tax_rate,
+        'summary': {
+            'room_total': room_total,
+            'services_subtotal': services_total,
+            'subtotal': subtotal,
+            'service_charge': round(service_charge, 2),
+            'tax': round(tax, 2),
+            'grand_total': round(grand_total, 2),
+            'prepaid': prepaid,
+            'balance_due': round(balance_due, 2)
+        }
+    }
+    
+    return success_response(data={'bill': bill_data})

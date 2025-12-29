@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, Clock, CheckCircle, XCircle, AlertCircle, Filter, Bed } from 'lucide-react'
-import { serviceRequestAPI, bookingAPI } from '../../services/api'
+import { serviceRequestAPI, bookingAPI, serviceAPI } from '../../services/api'
 import { format } from 'date-fns'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
@@ -11,11 +11,12 @@ const ServiceRequestsPage = () => {
   const { user } = useAuth()
   const [requests, setRequests] = useState([])
   const [bookings, setBookings] = useState([])
+  const [serviceTypes, setServiceTypes] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({
     booking_id: '',
-    service_type: 'room_service',
+    service_type: '',
     description: '',
     priority: 'medium'
   })
@@ -28,23 +29,33 @@ const ServiceRequestsPage = () => {
     try {
       setLoading(true)
       
-      // Fetch requests
-      const requestsRes = await serviceRequestAPI.getRequests()
-      const apiResponse = requestsRes.data
-      const requestsData = apiResponse?.data?.service_requests || apiResponse?.data || []
+      // Fetch data in parallel
+      const [requestsRes, bookingsRes, servicesRes] = await Promise.all([
+        serviceRequestAPI.getRequests(),
+        bookingAPI.getBookings(),
+        serviceAPI.getServices()
+      ])
+
+      // Handle Requests
+      const requestsData = requestsRes.data?.data?.service_requests || requestsRes.data?.data || []
       setRequests(Array.isArray(requestsData) ? requestsData : [])
 
-      // Fetch active bookings (confirmed or checked_in)
-      const bookingsRes = await bookingAPI.getBookings()
+      // Handle Bookings
       const allBookings = bookingsRes.data?.data?.bookings || []
-      
-      // Filter for active bookings
       const bookingsData = allBookings.filter(b => ['confirmed', 'checked_in'].includes(b.status))
       setBookings(bookingsData)
+
+      // Handle Services
+      const servicesData = servicesRes.data?.data?.services || []
+      setServiceTypes(servicesData)
       
-      // Select first booking by default if available
+      // Set defaults
       if (bookingsData.length > 0) {
-        setFormData(prev => ({ ...prev, booking_id: bookingsData[0].booking_id }))
+        setFormData(prev => ({ 
+          ...prev, 
+          booking_id: bookingsData[0].booking_id,
+          service_type: servicesData.length > 0 ? servicesData[0].code : ''
+        }))
       }
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -68,7 +79,7 @@ const ServiceRequestsPage = () => {
       setShowForm(false)
       setFormData({ 
         booking_id: bookings.length > 0 ? bookings[0].booking_id : '',
-        service_type: 'room_service', 
+        service_type: serviceTypes.length > 0 ? serviceTypes[0].code : '', 
         description: '', 
         priority: 'medium' 
       })
@@ -77,6 +88,9 @@ const ServiceRequestsPage = () => {
       toast.error(error.response?.data?.message || 'Failed to submit request')
     }
   }
+
+  // Helper to find selected service details
+  const selectedService = serviceTypes.find(s => s.code === formData.service_type)
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -176,23 +190,21 @@ const ServiceRequestsPage = () => {
                   className="input"
                   required
                 >
-                  <optgroup label="Food & Beverage">
-                    <option value="room_service">Room Service</option>
-                    <option value="dining">Restaurant Reservation</option>
-                  </optgroup>
-                  <optgroup label="Room Services">
-                    <option value="housekeeping">Housekeeping</option>
-                    <option value="laundry">Laundry & Dry Cleaning</option>
-                    <option value="maintenance">Maintenance / Repairs</option>
-                  </optgroup>
-                  <optgroup label="Guest Services">
-                    <option value="concierge">Concierge</option>
-                    <option value="transport">Airport / Tour Transport</option>
-                    <option value="pool">Swimming Pool</option>
-                    <option value="spa">Spa & Wellness</option>
-                  </optgroup>
-                  <option value="other">Other Request</option>
+                  <option value="" disabled>Select a service...</option>
+                  {serviceTypes.map(service => (
+                    <option key={service.id} value={service.code}>
+                      {service.name} • {service.is_chargeable 
+                        ? `LKR ${service.base_price?.toLocaleString()}` 
+                        : 'Complimentary'}
+                    </option>
+                  ))}
                 </select>
+                {selectedService?.is_chargeable && (
+                  <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    Warning: LKR {selectedService.base_price?.toLocaleString()} will be added to your room bill.
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -292,7 +292,12 @@ def get_branches():
             Booking.status.in_(['confirmed', 'checked_in'])
         ).count()
         
+        # Get dynamic configs
+        # Default to 0.10 (10%) if not set
+        service_charge_rate = float(branch.get_config('service_charge_rate', '0.10'))
+        
         branch_info = branch.to_dict()
+        branch_info['service_charge_rate'] = service_charge_rate * 100  # Convert to percentage for UI
         branch_info['statistics'] = {
             'total_rooms': total_rooms,
             'available_rooms': available_rooms,
@@ -332,12 +337,27 @@ def update_branch(branch_id):
             branch.tax_rate = float(data['tax_rate'])
         if 'contact_info' in data:
             branch.contact_info = data['contact_info']
+            
+        # Handle dynamic service charge update
+        if 'service_charge_rate' in data:
+            # UI sends percentage (e.g. 10), we store decimal (0.10)
+            rate_decimal = float(data['service_charge_rate']) / 100
+            PropertyConfig.set_config(
+                branch_id=branch.branch_id,
+                config_key='service_charge_rate',
+                config_value=str(rate_decimal),
+                description='Service charge rate (decimal)'
+            )
         
         db.session.commit()
         
+        # Return updated data including the config
+        response_data = branch.to_dict()
+        response_data['service_charge_rate'] = float(branch.get_config('service_charge_rate', '0.10')) * 100
+        
         return success_response(
             message='Branch updated successfully',
-            data={'branch': branch.to_dict()}
+            data={'branch': response_data}
         )
     except Exception as e:
         db.session.rollback()

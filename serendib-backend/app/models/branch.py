@@ -54,6 +54,8 @@ class Branch(db.Model):
     
     def get_config(self, key, default=None):
         """Get configuration value for this branch"""
+        from app.models.property_config import PropertyConfig
+        
         config = PropertyConfig.query.filter_by(
             branch_id=self.branch_id,
             config_key=key

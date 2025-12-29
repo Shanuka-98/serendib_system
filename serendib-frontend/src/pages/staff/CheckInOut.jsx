@@ -2,12 +2,207 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, CheckCircle, Clock, User, Calendar, MapPin, 
-  Camera, Upload, X, Filter, RefreshCw
+  Camera, Upload, X, Filter, RefreshCw, FileText, Printer, CreditCard
 } from 'lucide-react'
 import { bookingAPI } from '../../services/api'
 import { format } from 'date-fns'
 import { toast } from 'react-toastify'
 import { formatBookingRef } from '../../utils/helpers'
+
+// Bill Modal Component
+const BillModal = ({ booking, onClose, onConfirmCheckout }) => {
+  const [bill, setBill] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const printRef = useRef(null)
+
+  useEffect(() => {
+    const fetchBill = async () => {
+      try {
+        const response = await bookingAPI.getBill(booking.booking_id)
+        setBill(response.data.data.bill)
+      } catch (error) {
+        console.error('Error fetching bill:', error)
+        toast.error('Failed to load bill')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchBill()
+  }, [booking.booking_id])
+
+  const handlePrint = () => {
+    const printContent = printRef.current
+    const printWindow = window.open('', '_blank')
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Bill - ${bill?.booking_ref}</title>
+          <style>
+            body { font-family: 'Segoe UI', sans-serif; padding: 20px; max-width: 400px; margin: 0 auto; }
+            .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 15px; }
+            .header h1 { font-size: 18px; margin: 0; }
+            .header p { margin: 5px 0; font-size: 12px; color: #666; }
+            .info-row { display: flex; justify-content: space-between; margin: 8px 0; font-size: 13px; }
+            .section { border-bottom: 1px dashed #ccc; padding: 10px 0; }
+            .section-title { font-weight: bold; font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 8px; }
+            .item { display: flex; justify-content: space-between; margin: 5px 0; font-size: 13px; }
+            .item-name { max-width: 70%; }
+            .total-row { display: flex; justify-content: space-between; margin: 5px 0; font-size: 14px; }
+            .grand-total { font-size: 16px; font-weight: bold; border-top: 2px solid #333; padding-top: 10px; margin-top: 10px; }
+            .paid-badge { color: green; font-weight: bold; }
+            .balance { font-size: 18px; font-weight: bold; background: #f0f0f0; padding: 10px; text-align: center; margin-top: 15px; }
+            .footer { text-align: center; margin-top: 20px; font-size: 11px; color: #999; }
+            @media print { body { -webkit-print-color-adjust: exact; } }
+          </style>
+        </head>
+        <body>${printContent.innerHTML}<div class="footer">Thank you for staying with us!</div></body>
+      </html>
+    `)
+    printWindow.document.close()
+    printWindow.print()
+  }
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-2xl p-8">
+          <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-gray-600 mt-4">Loading bill...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden shadow-2xl"
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-primary-500 to-primary-600 text-white p-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-xl font-bold">{bill?.branch_name}</h2>
+              <p className="text-primary-100 text-sm">Guest Folio / Tax Invoice</p>
+            </div>
+            <button onClick={onClose} className="text-white/80 hover:text-white">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="mt-4 flex justify-between items-end">
+            <div>
+              <p className="text-primary-100 text-xs">Booking Reference</p>
+              <p className="font-mono font-bold">{bill?.booking_ref}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-primary-100 text-xs">Room</p>
+              <p className="font-bold">{bill?.room_number}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bill Content */}
+        <div className="p-6 overflow-y-auto max-h-[50vh]" ref={printRef}>
+          {/* Guest Info */}
+          <div className="mb-4 pb-4 border-b border-gray-200">
+            <p className="font-semibold text-gray-800">{bill?.guest_name}</p>
+            <p className="text-sm text-gray-500">
+              {format(new Date(bill?.stay.check_in), 'MMM dd, yyyy')} - {format(new Date(bill?.stay.check_out), 'MMM dd, yyyy')} ({bill?.stay.nights} nights)
+            </p>
+          </div>
+
+          {/* Room Charges */}
+          <div className="mb-4 pb-4 border-b border-gray-200">
+            <p className="text-xs font-bold text-gray-500 uppercase mb-2">Accommodation</p>
+            <div className="flex justify-between text-sm">
+              <span>Room ({bill?.stay.nights} × LKR {bill?.room_charges.per_night?.toLocaleString()})</span>
+              <span className="font-medium">LKR {bill?.room_charges.total?.toLocaleString()}</span>
+            </div>
+            {bill?.room_charges.paid && (
+              <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                <CheckCircle className="w-3 h-3" /> Prepaid via Card
+              </p>
+            )}
+          </div>
+
+          {/* Services */}
+          {bill?.services.length > 0 && (
+            <div className="mb-4 pb-4 border-b border-gray-200">
+              <p className="text-xs font-bold text-gray-500 uppercase mb-2">Services</p>
+              {bill.services.map((svc, idx) => (
+                <div key={idx} className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-700">{svc.type} <span className="text-gray-400 text-xs">({svc.date})</span></span>
+                  <span className="font-medium">LKR {svc.price?.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Summary */}
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Subtotal</span>
+              <span>LKR {bill?.summary.subtotal?.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Service Charge (10%)</span>
+              <span>LKR {bill?.summary.service_charge?.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Government Tax ({(bill?.tax_rate * 100).toFixed(0)}%)</span>
+              <span>LKR {bill?.summary.tax?.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-300">
+              <span>Grand Total</span>
+              <span>LKR {bill?.summary.grand_total?.toLocaleString()}</span>
+            </div>
+            {bill?.summary.prepaid > 0 && (
+              <div className="flex justify-between text-green-600">
+                <span>Less: Prepaid</span>
+                <span>- LKR {bill?.summary.prepaid?.toLocaleString()}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Balance Due */}
+          {bill?.summary.balance_due > 0 ? (
+            <div className="mt-4 p-4 bg-amber-50 rounded-xl text-center">
+              <p className="text-xs text-amber-600 uppercase font-bold">Balance Due (Services)</p>
+              <p className="text-2xl font-bold text-amber-700">LKR {bill?.summary.balance_due?.toLocaleString()}</p>
+            </div>
+          ) : (
+            <div className="mt-4 p-4 bg-green-50 rounded-xl text-center">
+              <p className="text-xs text-green-600 uppercase font-bold">Fully Paid</p>
+              <p className="text-lg font-bold text-green-700 flex items-center justify-center gap-2">
+                <CheckCircle className="w-5 h-5" /> No Balance Due
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="p-4 bg-gray-50 border-t border-gray-200 flex gap-3">
+          <button
+            onClick={handlePrint}
+            className="btn btn-secondary flex-1 flex items-center justify-center gap-2"
+          >
+            <Printer className="w-4 h-4" />
+            Print Bill
+          </button>
+          <button
+            onClick={() => onConfirmCheckout(booking.booking_id)}
+            className="btn btn-primary flex-1 flex items-center justify-center gap-2"
+          >
+            <CheckCircle className="w-4 h-4" />
+            Confirm Checkout
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
 
 const CheckInOutPage = () => {
   const [searchTerm, setSearchTerm] = useState('')
@@ -15,6 +210,7 @@ const CheckInOutPage = () => {
   const [loading, setLoading] = useState(false)
   const [filter, setFilter] = useState('all') // all, checkin, checkout
   const [photos, setPhotos] = useState({}) // Store uploaded photos by booking ID
+  const [billBooking, setBillBooking] = useState(null) // Booking to show bill for
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -103,10 +299,16 @@ const CheckInOutPage = () => {
     }
   }
 
-  const handleCheckOut = async (bookingId) => {
+  const handleCheckOutClick = (booking) => {
+    // Open bill modal instead of direct checkout
+    setBillBooking(booking)
+  }
+
+  const handleConfirmCheckout = async (bookingId) => {
     try {
       await bookingAPI.checkOut(bookingId)
       toast.success('Check-out successful')
+      setBillBooking(null)
       fetchBookings()
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to check out')
@@ -336,11 +538,11 @@ const CheckInOutPage = () => {
                       )}
                       {isCheckOut && booking.status === 'checked_in' && (
                         <button
-                          onClick={() => handleCheckOut(booking.booking_id)}
+                          onClick={() => handleCheckOutClick(booking)}
                           className="btn btn-peach flex-1 lg:flex-none justify-center"
                         >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Check Out
+                          <FileText className="h-4 w-4 mr-2" />
+                          View Bill & Checkout
                         </button>
                       )}
                       
@@ -359,6 +561,17 @@ const CheckInOutPage = () => {
           </div>
         )}
       </div>
+
+      {/* Bill Modal */}
+      <AnimatePresence>
+        {billBooking && (
+          <BillModal 
+            booking={billBooking}
+            onClose={() => setBillBooking(null)}
+            onConfirmCheckout={handleConfirmCheckout}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

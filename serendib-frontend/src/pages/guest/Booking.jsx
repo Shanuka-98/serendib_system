@@ -100,7 +100,10 @@ const BookingPage = () => {
     nights: 0,
     roomPrice: 0,
     subtotal: 0,
-    taxes: 0,
+    serviceCharge: 0,
+    taxAmount: 0,
+    taxRate: 0.12,
+    scRate: 0.10,
     total: 0
   })
   
@@ -180,8 +183,21 @@ const BookingPage = () => {
     setPointsDiscount(ptsDiscount)
     
     const discountedSubtotal = subtotal - tierDiscount - ptsDiscount - promoDiscount
-    const taxes = discountedSubtotal * 0.12 // 12% tax
-    const total = discountedSubtotal + taxes
+    
+    // Dynamic rates (defaults: Tax 12%, SC 10%)
+    const taxRate = room.tax_rate !== undefined ? room.tax_rate : 0.12
+    const scRate = room.service_charge_rate !== undefined ? room.service_charge_rate : 0.10
+    
+    // Service Charge (standard 10%)
+    const serviceCharge = discountedSubtotal * scRate
+    
+    // Tax (Calculated on Subtotal + Service Charge)
+    const taxAmount = (discountedSubtotal + serviceCharge) * taxRate
+    
+    // Combined Taxes & Fees for display
+    const totalFees = serviceCharge + taxAmount
+    
+    const total = discountedSubtotal + totalFees
     
     setBookingSummary({
       nights,
@@ -192,7 +208,10 @@ const BookingPage = () => {
       pointsDiscount: ptsDiscount,
       promoDiscount,
       pointsToEarn: Math.floor(total / 1000) * 10,
-      taxes,
+      serviceCharge,
+      taxAmount,
+      taxRate,
+      scRate,
       total: Math.max(0, total)
     })
   }
@@ -706,8 +725,13 @@ const BookingPage = () => {
                 )}
                 
                 <div className="flex justify-between text-gray-600">
-                  <span>Taxes & Fees</span>
-                  <span className="font-medium">{formatPrice(bookingSummary.taxes)}</span>
+                  <span>Service Charge ({(bookingSummary.scRate * 100).toFixed(0)}%)</span>
+                  <span className="font-medium">{formatPrice(bookingSummary.serviceCharge)}</span>
+                </div>
+
+                <div className="flex justify-between text-gray-600">
+                  <span>Tax ({(bookingSummary.taxRate * 100).toFixed(0)}%)</span>
+                  <span className="font-medium">{formatPrice(bookingSummary.taxAmount)}</span>
                 </div>
                 
                 <div className="border-t border-gray-200 pt-4">

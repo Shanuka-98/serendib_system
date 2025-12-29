@@ -176,7 +176,25 @@ const ServiceDetailsPage = () => {
                   {request.priority} Priority
                 </span>
               </div>
-              <p className="text-gray-500 text-sm">Request #{request.request_id}</p>
+              <div className="flex items-center gap-3">
+                <p className="text-gray-500 text-sm">Request #{request.request_id}</p>
+                {/* Pricing Badge */}
+                {request.is_chargeable ? (
+                  <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-xs font-medium">
+                    LKR {request.price?.toLocaleString() || 0}
+                  </span>
+                ) : (
+                  <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-medium">
+                    Complimentary
+                  </span>
+                )}
+                {/* Billing Status */}
+                {request.is_chargeable && request.is_billed && (
+                  <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" /> Billed
+                  </span>
+                )}
+              </div>
             </div>
             <StatusBadge 
               status={statusConfig[request.status]?.label || request.status} 

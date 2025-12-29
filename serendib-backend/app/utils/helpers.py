@@ -58,16 +58,29 @@ def calculate_nights(check_in, check_out):
     return (check_out - check_in).days
 
 
-def calculate_booking_amount(price_per_night, check_in, check_out, tax_rate=15.0):
-    """Calculate total booking amount including tax"""
+def calculate_booking_amount(price_per_night, check_in, check_out, tax_rate=15.0, service_charge_rate=0.10):
+    """Calculate total booking amount including tax and service charge"""
     nights = calculate_nights(check_in, check_out)
-    subtotal = price_per_night * nights
-    tax = subtotal * (tax_rate / 100)
-    total = subtotal + tax
+    subtotal = float(price_per_night) * nights
+    
+    # Ensure rates are floats (handle Decimals from DB)
+    sc_val = float(service_charge_rate)
+    tax_val = float(tax_rate)
+    
+    # Calculate service charge
+    service_charge = subtotal * sc_val
+    
+    # Calculate tax (on subtotal + service charge)
+    taxable_amount = subtotal + service_charge
+    tax = taxable_amount * (tax_val / 100)
+    
+    total = subtotal + service_charge + tax
     
     return {
         'nights': nights,
         'subtotal': float(subtotal),
+        'service_charge': float(service_charge),
+        'service_charge_rate': service_charge_rate,
         'tax': float(tax),
         'tax_rate': tax_rate,
         'total': float(total)

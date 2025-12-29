@@ -6,6 +6,7 @@ Guest service requests (room service, housekeeping, etc.)
 from flask import Blueprint, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
+from app.models.service_type import ServiceType
 from app.models.service_request import ServiceRequest
 from app.models.booking import Booking
 from app.models.notification import Notification
@@ -112,12 +113,6 @@ def get_service_request(request_id):
 def create_service_request():
     """
     Create a new service request
-    
-    Request Body:
-        booking_id: Booking ID
-        service_type: Service type (room_service, housekeeping, maintenance, concierge, laundry, spa, other)
-        description: Request description
-        priority: Priority level (optional, default: medium)
     """
     current_user = get_current_user()
     data = request.get_json()
@@ -142,10 +137,12 @@ def create_service_request():
     if not booking.is_active():
         return error_response('Service requests can only be created for active bookings', status_code=400)
     
-    # Validate service type
-    valid_types = ['room_service', 'housekeeping', 'maintenance', 'concierge', 'laundry', 'spa', 'other']
-    if data['service_type'] not in valid_types:
-        return error_response(f'Invalid service type. Must be one of: {", ".join(valid_types)}', status_code=400)
+    # Validate service type (Dynamic Check)
+    requested_code = data['service_type']
+    service_type_obj = ServiceType.query.filter_by(code=requested_code, is_active=True).first()
+    
+    if not service_type_obj:
+        return error_response(f'Invalid or inactive service type: {requested_code}', status_code=400)
     
     # Validate priority if provided
     priority = data.get('priority', 'medium')
@@ -158,11 +155,14 @@ def create_service_request():
         service_request = ServiceRequest(
             booking_id=booking.booking_id,
             user_id=current_user.user_id,
-            service_type=data['service_type'],
+            service_type=requested_code,
             description=data['description'],
             priority=priority,
             status='pending'
         )
+        
+        # Set pricing based on service type
+        service_request.set_pricing()
         
         db.session.add(service_request)
         db.session.flush()
@@ -212,11 +212,6 @@ def create_service_request():
 def update_service_request(request_id):
     """
     Update service request status (Staff/Admin only)
-    
-    Request Body:
-        status: New status (pending, in_progress, completed, cancelled)
-        notes: Additional notes (optional)
-        assigned_staff_id: Assign to staff member (optional)
     """
     current_user = get_current_user()
     service_request = ServiceRequest.query.get(request_id)
@@ -365,17 +360,19 @@ def cancel_service_request(request_id):
 @service_requests_bp.route('/types', methods=['GET'])
 def get_service_types():
     """
-    Get available service types
+    Get available service types (Dynamic from DB)
     """
-    types = [
-        {'value': 'room_service', 'label': 'Room Service', 'icon': 'utensils'},
-        {'value': 'housekeeping', 'label': 'Housekeeping', 'icon': 'broom'},
-        {'value': 'maintenance', 'label': 'Maintenance', 'icon': 'tools'},
-        {'value': 'concierge', 'label': 'Concierge', 'icon': 'concierge-bell'},
-        {'value': 'laundry', 'label': 'Laundry', 'icon': 'tshirt'},
-        {'value': 'spa', 'label': 'Spa', 'icon': 'spa'},
-        {'value': 'other', 'label': 'Other', 'icon': 'ellipsis-h'}
-    ]
+    active_services = ServiceType.query.filter_by(is_active=True).order_by(ServiceType.name).all()
+    
+    types = []
+    for service in active_services:
+        types.append({
+            'value': service.code,
+            'label': service.name,
+            'icon': 'concierge-bell',  # Default icon, could be dynamic later
+            'price': float(service.base_price) if service.base_price else 0,
+            'is_chargeable': service.is_chargeable,
+            'description': service.description
+        })
     
     return success_response(data={'service_types': types})
-

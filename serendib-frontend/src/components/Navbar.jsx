@@ -83,6 +83,7 @@ const Navbar = () => {
         { path: '/admin/users', label: 'Users', icon: Users },
         { path: '/admin/rooms', label: 'Rooms', icon: Bed },
         { path: '/admin/branches', label: 'Branches', icon: Building2 },
+        { path: '/admin/services', label: 'Service Catalog', icon: ConciergeBell },
         { path: '/admin/promotions', label: 'Promotions', icon: Award },
         { path: '/staff/schedule', label: 'Staff Schedule', icon: Clock },
       ]
@@ -115,7 +116,7 @@ const Navbar = () => {
   }
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200 shadow-sm">
+    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200 shadow-sm print:hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}

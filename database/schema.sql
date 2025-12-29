@@ -139,13 +139,28 @@ CREATE TABLE Payment (
 ) ENGINE=InnoDB;
 
 -- =====================================================
+-- TABLE: ServiceType (Dynamic Service Catalog)
+-- =====================================================
+CREATE TABLE ServiceType (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,       -- Display name e.g., "Room Service", "Spa"
+    code VARCHAR(50) NOT NULL UNIQUE,        -- Internal code e.g., "room_service", "spa"
+    description TEXT,
+    base_price DECIMAL(10,2) DEFAULT 0.00,
+    is_chargeable BOOLEAN DEFAULT FALSE,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- =====================================================
 -- TABLE: ServiceRequest
 -- =====================================================
 CREATE TABLE ServiceRequest (
     request_id INT AUTO_INCREMENT PRIMARY KEY,
     booking_id INT NOT NULL,
     user_id INT NOT NULL,
-    service_type ENUM('room_service', 'housekeeping', 'maintenance', 'concierge', 'laundry', 'spa', 'dining', 'transport', 'pool', 'other') NOT NULL,
+    service_type VARCHAR(50) NOT NULL, -- References ServiceType.code (Loose FK)
     description TEXT NOT NULL,
     status ENUM('pending', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
     priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
@@ -153,6 +168,11 @@ CREATE TABLE ServiceRequest (
     completed_at TIMESTAMP NULL,
     assigned_staff_id INT,
     notes TEXT,
+    -- Pricing fields
+    price DECIMAL(10,2) DEFAULT 0.00,
+    is_chargeable BOOLEAN DEFAULT FALSE,
+    is_billed BOOLEAN DEFAULT FALSE,
+    billed_at TIMESTAMP NULL,
     FOREIGN KEY (booking_id) REFERENCES Booking(booking_id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE,
     FOREIGN KEY (assigned_staff_id) REFERENCES User(user_id) ON DELETE SET NULL,
@@ -160,7 +180,8 @@ CREATE TABLE ServiceRequest (
     INDEX idx_user (user_id),
     INDEX idx_status (status),
     INDEX idx_priority (priority),
-    INDEX idx_requested_at (requested_at)
+    INDEX idx_requested_at (requested_at),
+    INDEX idx_is_billed (is_billed)
 ) ENGINE=InnoDB;
 
 -- =====================================================
@@ -452,10 +473,13 @@ INSERT INTO PropertyConfig (branch_id, config_key, config_value, description) VA
 (1, 'check_in_time', '14:00', 'Standard check-in time'),
 (1, 'check_out_time', '12:00', 'Standard check-out time'),
 (1, 'cancellation_policy_hours', '24', 'Hours before check-in for free cancellation'),
+(1, 'service_charge_rate', '0.10', 'Service charge rate (decimal)'),
 (2, 'check_in_time', '15:00', 'Beach resort check-in time'),
 (2, 'check_out_time', '11:00', 'Beach resort check-out time'),
+(2, 'service_charge_rate', '0.10', 'Service charge rate (decimal)'),
 (3, 'check_in_time', '14:00', 'Hill country check-in time'),
 (3, 'check_out_time', '12:00', 'Hill country check-out time'),
+(3, 'service_charge_rate', '0.10', 'Service charge rate (decimal)'),
 (NULL, 'loyalty_points_rate', '10', 'Points earned per 1000 Rs spent'),
 (NULL, 'min_booking_advance_days', '1', 'Minimum days in advance for booking');
 

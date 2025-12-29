@@ -18,6 +18,7 @@ const BookingDetailsPage = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [booking, setBooking] = useState(null)
+  const [bill, setBill] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
@@ -34,11 +35,12 @@ const BookingDetailsPage = () => {
   const fetchBookingDetails = async () => {
     try {
       setLoading(true)
-      const response = await bookingAPI.getBooking(id)
+      const [bookingRes, billRes] = await Promise.all([
+        bookingAPI.getBooking(id),
+        bookingAPI.getBill(id)
+      ])
       
-      // API returns: { success: true, data: { booking: {...} } } or { success: true, data: {...} }
-      const apiResponse = response.data
-      const bookingData = apiResponse?.data?.booking || apiResponse?.data
+      const bookingData = bookingRes.data?.data?.booking || bookingRes.data?.data
       
       if (!bookingData) {
         toast.error('Booking not found')
@@ -47,14 +49,10 @@ const BookingDetailsPage = () => {
       }
       
       setBooking(bookingData)
+      setBill(billRes.data.data.bill)
     } catch (error) {
-      console.error('Error fetching booking:', error)
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      })
-      toast.error(error.response?.data?.message || 'Failed to load booking details')
+      console.error('Error fetching booking details:', error)
+      toast.error('Failed to load booking details')
       navigate('/bookings')
     } finally {
       setLoading(false)
@@ -298,132 +296,238 @@ const BookingDetailsPage = () => {
                 <h2 className="text-2xl font-display font-bold text-gray-800 mb-4">
                   Special Requests
                 </h2>
-                <p className="text-gray-600">{booking.special_requests}</p>
+                <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100">
+                  <p className="text-gray-700 italic">"{booking.special_requests}"</p>
+                </div>
               </motion.div>
             )}
+
+            {/* NEW: Charges & Services Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="glass rounded-2xl p-6"
+            >
+              <h2 className="text-2xl font-display font-bold text-gray-800 mb-6 flex items-center justify-between">
+                <span>Charges & Services</span>
+                <span className={`text-sm px-3 py-1 rounded-full ${
+                  booking.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                }`}>
+                  {booking.payment_status === 'paid' ? 'Fully Paid' : 'Balance Due'}
+                </span>
+              </h2>
+
+              <BillSummary bill={bill} />
+              
+            </motion.div>
           </div>
 
           {/* Sidebar */}
-          <div className="lg:col-span-1">
+          <div className="space-y-6 print:hidden">
+            {/* Payment Summary */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="glass rounded-2xl p-6 sticky top-8"
+              className="glass rounded-2xl p-6"
             >
-              <h2 className="text-xl font-display font-bold text-gray-800 mb-4">
-                Payment Summary
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                Total Payment
               </h2>
-
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-gray-600">
-                  <span>Room ({nights} nights)</span>
-                  <span>{formatPrice(booking.room?.price_per_night ? booking.room.price_per_night * nights : (booking.total_amount || 0) / 1.12)}</span>
+                  <span>Room Charge</span>
+                  <span>{formatPrice(booking.total_amount)}</span>
                 </div>
-                
-                {/* Loyalty Discount */}
-                {booking.loyalty_discount > 0 && (
-                  <div className="flex justify-between text-green-600 font-medium">
-                    <div className="flex items-center">
-                      <Gift className="h-4 w-4 mr-2" />
-                      <span>Loyalty Savings</span>
-                    </div>
-                    <span>-{formatPrice(booking.loyalty_discount)}</span>
-                  </div>
-                )}
-
-                {/* Points Redeemed */}
-                {booking.points_discount > 0 && (
-                  <div className="flex justify-between text-green-600 font-medium">
-                    <div className="flex items-center">
-                      <Gift className="h-4 w-4 mr-2" />
-                      <span>Points Redeemed ({booking.loyalty_points_redeemed} pts)</span>
-                    </div>
-                    <span>-{formatPrice(booking.points_discount)}</span>
-                  </div>
-                )}
-
-                {/* Promo Code Discount */}
-                {booking.promo_code && (
-                  <div className="flex justify-between text-green-600 font-medium">
-                    <div className="flex items-center">
-                      <CreditCard className="h-4 w-4 mr-2" />
-                      <span>Promo: {booking.promo_code}</span>
-                    </div>
-                    <span>-{formatPrice(booking.promo_discount || 0)}</span>
-                  </div>
-                )}
-
-                <div className="flex justify-between text-gray-600">
-                  <span>Taxes & Fees</span>
-                  <span>{formatPrice(parseFloat(booking.total_amount) - (parseFloat(booking.total_amount) / (1 + ((booking.branch?.tax_rate || 15) / 100))))}</span>
-                </div>
-                <div className="border-t border-gray-200 pt-3">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-gray-800">Total</span>
-                    <span className="text-xl font-bold text-primary-600">
-                      {formatPrice(booking.total_amount || 0)}
+                {bill && (
+                  <div className="flex justify-between text-sm text-gray-500">
+                    <span>Payment Status</span>
+                    <span className={`font-medium ${bill.summary.balance_due <= 0 ? 'text-green-600' : 'text-amber-600'}`}>
+                      {bill.summary.balance_due <= 0 ? 'Paid' : 'Due'}
                     </span>
                   </div>
-                </div>
+                )}
               </div>
 
-              <div className="mb-6 p-3 bg-gray-50 rounded-xl">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Payment Status</span>
-                  {booking.payment_status === 'completed' || booking.payment_status === 'paid' ? (
-                    <span className="badge badge-success">Paid</span>
-                  ) : (
-                    <span className="badge badge-warning">Pending</span>
-                  )}
-                </div>
-              </div>
+              {/* Action Buttons */}
+              <div className="space-y-3">
+                <button
+                  onClick={() => window.print()}
+                  className="w-full btn btn-secondary flex items-center justify-center gap-2 group hover:shadow-md transition-all"
+                >
+                  <Download className="h-4 w-4 text-gray-600 group-hover:text-primary-600" />
+                  <span>Download Receipt</span>
+                </button>
 
-              <div className="space-y-2 print:hidden">
                 {canCancel && (
                   <button
                     onClick={() => setShowCancelModal(true)}
-                    className="btn btn-secondary w-full text-red-600 hover:bg-red-50"
+                    className="w-full btn bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center gap-2 border border-red-100"
                   >
-                    <XCircle className="h-4 w-4 mr-2" />
+                    <XCircle className="h-4 w-4" />
                     Cancel Booking
                   </button>
                 )}
-                <button
-                  onClick={() => window.print()}
-                  className="btn btn-ghost w-full"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Receipt
-                </button>
               </div>
+            </motion.div>
 
-              {/* Contact Info */}
-              <div className="mt-6 pt-6 border-t">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">Need Help?</h3>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <Phone className="h-4 w-4 mr-2" />
-                    +94 11 234 5678
-                  </div>
-                  <div className="flex items-center">
-                    <Mail className="h-4 w-4 mr-2" />
-                    support@serendibhotels.lk
-                  </div>
-                </div>
+            {/* Need Help? */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="glass rounded-2xl p-6 bg-gradient-to-br from-primary-600 to-primary-700 text-white shadow-xl"
+            >
+              <h3 className="text-lg font-bold mb-2 flex items-center">
+                <Users className="h-5 w-5 mr-2 opacity-80" />
+                Need Assistance?
+              </h3>
+              <p className="text-primary-100 text-sm mb-4 leading-relaxed">
+                Our front desk is available 24/7 to help you with any questions.
+              </p>
+              <div className="space-y-3">
+                <a href="tel:+94112345678" className="flex items-center gap-3 text-sm hover:text-white transition-colors p-2 bg-white/10 rounded-lg">
+                  <Phone className="h-4 w-4" />
+                  <span className="font-mono">+94 11 234 5678</span>
+                </a>
+                <a href="mailto:support@serendibhotels.lk" className="flex items-center gap-3 text-sm hover:text-white transition-colors p-2 bg-white/10 rounded-lg">
+                  <Mail className="h-4 w-4" />
+                  <span>support@serendibhotels.lk</span>
+                </a>
               </div>
             </motion.div>
           </div>
         </div>
       </div>
 
-      {/* Cancel Confirmation Modal */}
-      <CancelBookingModal
-        isOpen={showCancelModal}
-        onClose={() => setShowCancelModal(false)}
-        onConfirm={handleCancel}
-        booking={booking}
-        isCancelling={cancelling}
-      />
+      {/* Cancel Modal */}
+      <AnimatePresence>
+        {showCancelModal && (
+          <CancelBookingModal
+            onClose={() => setShowCancelModal(false)}
+            onConfirm={handleCancel}
+            reason={cancelReason}
+            setReason={setCancelReason}
+            loading={cancelling}
+          />
+        )}
+      </AnimatePresence>
+      
+      {/* Print Styles */}
+      <style>{`
+        @media print {
+          @page { margin: 15mm; size: auto; }
+          body { background: white; -webkit-print-color-adjust: exact; }
+          .glass { box-shadow: none !important; border: none !important; padding: 0 !important; margin-bottom: 2rem !important; }
+          .btn, .no-print, nav { display: none !important; }
+          
+          /* Layout Adjustments */
+          .max-w-4xl { max-width: 100% !important; padding: 0 !important; }
+          .grid { display: block !important; }
+          .lg\\:col-span-2 { width: 100% !important; }
+          
+          /* Text Size & Spacing */
+          h1 { font-size: 24pt !important; margin-bottom: 0.5rem !important; }
+          h2 { font-size: 16pt !important; margin-bottom: 0.5rem !important; border-bottom: 1px solid #eee; padding-bottom: 0.25rem; }
+          p, span { font-size: 11pt !important; }
+          
+          /* Hide Sidebar Elements in Print */
+          .space-y-6.print\\:hidden { display: none !important; }
+          
+          /* Footer */
+          .print-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 9pt;
+            color: #999;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+          }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+// Inline Bill Summary Component for Booking Details
+const BillSummary = ({ bill }) => {
+  if (!bill) return <div className="text-sm text-gray-500 animate-pulse">Loading charges...</div>
+  
+  // Calculate if fully paid based on balance
+  const isFullyPaid = bill.summary.balance_due <= 0
+
+  return (
+    <div className="space-y-4">
+      {/* Room Charges */}
+      <div className="flex justify-between items-center pb-3 border-b border-gray-100">
+        <div>
+          <p className="font-medium text-gray-800">Accommodation</p>
+          <p className="text-xs text-gray-500">{bill.stay.nights} nights × {new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.room_charges.per_night)}</p>
+        </div>
+        <div className="text-right">
+          <p className="font-medium">{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.room_charges.total)}</p>
+          {bill.room_charges.paid && <span className="text-[10px] text-green-600 bg-green-50 px-2 py-0.5 rounded-full ring-1 ring-green-100">Prepaid</span>}
+        </div>
+      </div>
+
+      {/* Services */}
+      {bill.services.map((svc, i) => (
+        <div key={i} className="flex justify-between items-center text-sm group hover:bg-gray-50 p-2 rounded-lg transition-colors -mx-2">
+          <div>
+            <p className="text-gray-700 font-medium">{svc.type}</p>
+            <p className="text-xs text-gray-500">{svc.date}</p>
+          </div>
+          <p className="font-medium text-gray-700">{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(svc.price)}</p>
+        </div>
+      ))}
+      {bill.services.length === 0 && (
+        <p className="text-sm text-gray-400 italic py-2">No additional services charged yet.</p>
+      )}
+
+      {/* Totals */}
+      <div className="pt-4 border-t border-gray-200 space-y-2 text-sm bg-gray-50 p-4 rounded-xl mt-4 border border-gray-100">
+        <div className="flex justify-between text-gray-600">
+          <span>Subtotal</span>
+          <span>{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.subtotal)}</span>
+        </div>
+        <div className="flex justify-between text-gray-600">
+          <span>Service Charge ({(bill.service_charge_rate * 100).toFixed(0)}%)</span>
+          <span>{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.service_charge)}</span>
+        </div>
+        <div className="flex justify-between text-gray-600">
+          <span>Taxes ({(bill.tax_rate * 100).toFixed(0)}%)</span>
+          <span>{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.tax)}</span>
+        </div>
+        <div className="flex justify-between font-bold text-gray-900 border-t border-gray-200 pt-3 mt-2 text-base">
+          <span>Total</span>
+          <span>{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.grand_total)}</span>
+        </div>
+        {bill.summary.prepaid > 0 && (
+          <div className="flex justify-between text-green-600 text-sm font-medium">
+            <span>Paid</span>
+            <span>-{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.prepaid)}</span>
+          </div>
+        )}
+        <div className={`flex justify-between font-bold text-lg pt-3 border-t border-dashed border-gray-300 mt-2 ${
+          isFullyPaid ? 'text-green-600' : 'text-amber-600'
+        }`}>
+          <span>{isFullyPaid ? 'Balance Due' : 'Amount Due'}</span>
+          <span>
+            {new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.balance_due)}
+          </span>
+        </div>
+        {isFullyPaid && (
+          <div className="text-center mt-2">
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600 uppercase tracking-wider bg-green-50 px-3 py-1 rounded-full border border-green-100">
+              <CheckCircle className="w-3 h-3" />
+              Paid in Full
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
