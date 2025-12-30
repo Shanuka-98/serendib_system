@@ -15,6 +15,7 @@ loyalty_bp = Blueprint('loyalty', __name__)
 
 
 @loyalty_bp.route('/profile', methods=['GET'])
+@loyalty_bp.route('/status', methods=['GET'])
 @jwt_required()
 def get_loyalty_profile():
     """

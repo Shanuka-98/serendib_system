@@ -422,6 +422,7 @@ def get_facility_booking(booking_id):
 
 
 @facilities_bp.route('/bookings', methods=['POST'])
+@facilities_bp.route('/book', methods=['POST'])
 @jwt_required()
 def create_facility_booking():
     """

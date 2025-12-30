@@ -50,8 +50,24 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     DEBUG = False
 
+class TestingConfig(Config):
+    """Configuration for pytest unit tests using in-memory SQLite database."""
+    TESTING = True
+    DEBUG = True
+    # Use SQLite in-memory database for fast, isolated tests
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    # SQLite does not need connection pooling
+    SQLALCHEMY_ENGINE_OPTIONS = {}
+    JWT_SECRET_KEY = 'test-jwt-secret'
+    SECRET_KEY = 'test-secret-key'
+    # Disable CSRF for testing API endpoints
+    WTF_CSRF_ENABLED = False
+    # Shorter token expiry for testing
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
+
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
+    'testing': TestingConfig,
     'default': DevelopmentConfig
 }

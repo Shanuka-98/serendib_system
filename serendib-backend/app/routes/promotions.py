@@ -199,7 +199,6 @@ def delete_promotion(promotion_id):
 
 
 @promotions_bp.route('/validate', methods=['POST'])
-@jwt_required()
 def validate_promo_code():
     """Validate a promo code and return discount details"""
     data = request.get_json()
