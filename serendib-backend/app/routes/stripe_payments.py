@@ -1,6 +1,6 @@
 """
 Stripe Payment Integration Routes
-Handles payment intents, webhooks, and payment processing
+Handles payment intents, webhooks, and payment processing for ROOM BOOKINGS
 """
 
 import os
@@ -86,7 +86,7 @@ def create_payment_intent():
 @jwt_required()
 def create_checkout_session():
     """
-    Create a Stripe Checkout session for a booking
+    Create a Stripe Checkout session for a ROOM booking
     Redirects user to Stripe's hosted checkout page
     
     Request Body:

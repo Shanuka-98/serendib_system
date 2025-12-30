@@ -664,6 +664,233 @@ CREATE INDEX idx_payment_booking_status ON Payment(booking_id, payment_status);
 -- FLUSH PRIVILEGES;
 
 -- =====================================================
+-- TABLE: Facility
+-- Pool, Gym, Spa, Event Halls, Meeting Rooms
+-- =====================================================
+CREATE TABLE IF NOT EXISTS Facility (
+    facility_id INT AUTO_INCREMENT PRIMARY KEY,
+    branch_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    facility_type ENUM('pool', 'gym', 'spa', 'event_hall', 'meeting_room') NOT NULL,
+    description TEXT,
+    capacity INT NOT NULL,
+    price_per_slot DECIMAL(10,2) DEFAULT 0.00,
+    slot_duration_minutes INT DEFAULT 60,
+    requires_booking BOOLEAN DEFAULT TRUE,
+    is_guest_only BOOLEAN DEFAULT TRUE,
+    is_active BOOLEAN DEFAULT TRUE,
+    amenities JSON,
+    images JSON,
+    operating_hours JSON,
+    rules TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (branch_id) REFERENCES Branch(branch_id) ON DELETE CASCADE,
+    INDEX idx_facility_branch (branch_id),
+    INDEX idx_facility_type (facility_type),
+    INDEX idx_facility_active (is_active)
+) ENGINE=InnoDB;
+
+-- =====================================================
+-- TABLE: FacilitySlot
+-- Time slots for each facility
+-- =====================================================
+CREATE TABLE IF NOT EXISTS FacilitySlot (
+    slot_id INT AUTO_INCREMENT PRIMARY KEY,
+    facility_id INT NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    day_of_week ENUM('monday','tuesday','wednesday','thursday','friday','saturday','sunday','all') DEFAULT 'all',
+    max_capacity INT,
+    price_override DECIMAL(10,2),
+    is_active BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (facility_id) REFERENCES Facility(facility_id) ON DELETE CASCADE,
+    INDEX idx_slot_facility (facility_id)
+) ENGINE=InnoDB;
+
+-- =====================================================
+-- TABLE: FacilityAddOn
+-- Add-on services (catering, decoration, equipment)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS FacilityAddOn (
+    addon_id INT AUTO_INCREMENT PRIMARY KEY,
+    facility_id INT,
+    branch_id INT,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    price DECIMAL(10,2) NOT NULL,
+    price_type ENUM('flat', 'per_person', 'per_hour') DEFAULT 'flat',
+    category ENUM('catering', 'decoration', 'equipment', 'service', 'other') DEFAULT 'other',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (facility_id) REFERENCES Facility(facility_id) ON DELETE CASCADE,
+    FOREIGN KEY (branch_id) REFERENCES Branch(branch_id) ON DELETE CASCADE,
+    INDEX idx_addon_facility (facility_id),
+    INDEX idx_addon_category (category)
+) ENGINE=InnoDB;
+
+-- =====================================================
+-- TABLE: FacilityBooking
+-- Guest reservations for facilities
+-- =====================================================
+CREATE TABLE IF NOT EXISTS FacilityBooking (
+    booking_id INT AUTO_INCREMENT PRIMARY KEY,
+    facility_id INT NOT NULL,
+    slot_id INT,
+    user_id INT,
+    room_booking_id INT,
+    booking_date DATE NOT NULL,
+    start_time TIME,
+    end_time TIME,
+    number_of_guests INT DEFAULT 1,
+    status ENUM('inquiry', 'quoted', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
+    event_type VARCHAR(100),
+    event_name VARCHAR(200),
+    contact_name VARCHAR(150),
+    contact_email VARCHAR(255),
+    contact_phone VARCHAR(20),
+    organization VARCHAR(200),
+    base_price DECIMAL(10,2) DEFAULT 0.00,
+    selected_addons JSON,
+    addons_total DECIMAL(10,2) DEFAULT 0.00,
+    subtotal DECIMAL(10,2) DEFAULT 0.00,
+    service_charge DECIMAL(10,2) DEFAULT 0.00,
+    tax_amount DECIMAL(10,2) DEFAULT 0.00,
+    total_amount DECIMAL(10,2) DEFAULT 0.00,
+    deposit_amount DECIMAL(10,2) DEFAULT 0.00,
+    deposit_paid BOOLEAN DEFAULT FALSE,
+    deposit_paid_at TIMESTAMP NULL,
+    payment_type ENUM('free', 'pay_now', 'add_to_bill', 'deposit_required') DEFAULT 'free',
+    payment_status ENUM('not_required', 'pending', 'partial', 'paid', 'refunded') DEFAULT 'not_required',
+    stripe_payment_id VARCHAR(255),
+    special_requests TEXT,
+    admin_notes TEXT,
+    cancellation_reason TEXT,
+    cancelled_at TIMESTAMP NULL,
+    created_by INT,
+    quote_sent_at TIMESTAMP NULL,
+    confirmed_at TIMESTAMP NULL,
+    completed_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (facility_id) REFERENCES Facility(facility_id) ON DELETE CASCADE,
+    FOREIGN KEY (slot_id) REFERENCES FacilitySlot(slot_id) ON DELETE SET NULL,
+    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (room_booking_id) REFERENCES Booking(booking_id) ON DELETE SET NULL,
+    FOREIGN KEY (created_by) REFERENCES User(user_id) ON DELETE SET NULL,
+    INDEX idx_fb_facility (facility_id),
+    INDEX idx_fb_user (user_id),
+    INDEX idx_fb_room_booking (room_booking_id),
+    INDEX idx_fb_date (booking_date),
+    INDEX idx_fb_status (status)
+) ENGINE=InnoDB;
+
+-- =====================================================
+-- INSERT SAMPLE FACILITIES
+-- =====================================================
+
+-- Colombo Branch Facilities
+INSERT INTO Facility (branch_id, name, facility_type, description, capacity, price_per_slot, slot_duration_minutes, requires_booking, is_guest_only, amenities, operating_hours) VALUES
+(1, 'Infinity Pool', 'pool', 'Rooftop infinity pool with stunning city views.', 30, 0.00, 60, TRUE, TRUE, 
+ JSON_ARRAY('Towels', 'Poolside Service', 'Sun Loungers', 'Changing Rooms'),
+ JSON_OBJECT('open', '06:00', 'close', '20:00')),
+(1, 'Fitness Center', 'gym', 'State-of-the-art fitness center with cardio and weight training equipment.', 20, 0.00, 60, FALSE, TRUE,
+ JSON_ARRAY('Cardio Equipment', 'Free Weights', 'Yoga Mats', 'Locker Room'),
+ JSON_OBJECT('open', '05:00', 'close', '22:00')),
+(1, 'Serenity Spa', 'spa', 'Luxury spa offering traditional Ayurvedic treatments.', 8, 5000.00, 60, TRUE, FALSE,
+ JSON_ARRAY('Ayurvedic Treatments', 'Massage Therapy', 'Aromatherapy', 'Steam Room'),
+ JSON_OBJECT('open', '09:00', 'close', '21:00')),
+(1, 'Grand Ballroom', 'event_hall', 'Elegant ballroom for weddings, galas, and corporate events.', 300, 150000.00, 240, TRUE, FALSE,
+ JSON_ARRAY('Stage', 'Dance Floor', 'Basic AV', 'Bridal Suite Access'),
+ JSON_OBJECT('open', '08:00', 'close', '23:00')),
+(1, 'Boardroom One', 'meeting_room', 'Executive boardroom with video conferencing capabilities.', 20, 15000.00, 60, TRUE, FALSE,
+ JSON_ARRAY('Projector', 'Video Conferencing', 'Whiteboard', 'Coffee Service'),
+ JSON_OBJECT('open', '08:00', 'close', '20:00'));
+
+-- Mirissa Branch Facilities
+INSERT INTO Facility (branch_id, name, facility_type, description, capacity, price_per_slot, slot_duration_minutes, requires_booking, is_guest_only, amenities, operating_hours) VALUES
+(2, 'Beach Pool', 'pool', 'Oceanfront pool with direct beach access.', 40, 0.00, 60, TRUE, TRUE,
+ JSON_ARRAY('Swim-up Bar', 'Beach Access', 'Towels', 'Cabanas'),
+ JSON_OBJECT('open', '06:00', 'close', '19:00')),
+(2, 'Ayurveda Retreat', 'spa', 'Traditional Sri Lankan Ayurvedic spa with herbal treatments.', 6, 7500.00, 90, TRUE, FALSE,
+ JSON_ARRAY('Ayurvedic Consultation', 'Herbal Treatments', 'Oil Massage', 'Steam Bath'),
+ JSON_OBJECT('open', '08:00', 'close', '20:00')),
+(2, 'Sunset Pavilion', 'event_hall', 'Beachfront pavilion for intimate weddings and events.', 150, 200000.00, 300, TRUE, FALSE,
+ JSON_ARRAY('Beach Setting', 'Sunset Views', 'Fairy Lights', 'Sound System'),
+ JSON_OBJECT('open', '10:00', 'close', '23:00'));
+
+-- Kandy Branch Facilities
+INSERT INTO Facility (branch_id, name, facility_type, description, capacity, price_per_slot, slot_duration_minutes, requires_booking, is_guest_only, amenities, operating_hours) VALUES
+(3, 'Mountain View Pool', 'pool', 'Heated pool overlooking the Kandy hills.', 25, 0.00, 60, TRUE, TRUE,
+ JSON_ARRAY('Heated Pool', 'Mountain View', 'Towels', 'Pool Bar'),
+ JSON_OBJECT('open', '07:00', 'close', '19:00')),
+(3, 'Tea Garden Spa', 'spa', 'Spa inspired by Ceylon tea traditions.', 4, 4500.00, 60, TRUE, FALSE,
+ JSON_ARRAY('Tea Treatments', 'Herbal Wraps', 'Hot Stone Massage'),
+ JSON_OBJECT('open', '09:00', 'close', '19:00')),
+(3, 'Colonial Hall', 'event_hall', 'Historic colonial-era hall with period architecture.', 200, 120000.00, 240, TRUE, FALSE,
+ JSON_ARRAY('Colonial Architecture', 'Garden Access', 'Grand Piano'),
+ JSON_OBJECT('open', '09:00', 'close', '22:00'));
+
+-- Pool Slots (All Branches)
+INSERT INTO FacilitySlot (facility_id, start_time, end_time, day_of_week, max_capacity) VALUES
+-- Colombo Infinity Pool (facility_id = 1)
+(1, '06:00', '07:00', 'all', 30), (1, '07:00', '08:00', 'all', 30), (1, '08:00', '09:00', 'all', 30),
+(1, '09:00', '10:00', 'all', 30), (1, '10:00', '11:00', 'all', 30), (1, '11:00', '12:00', 'all', 30),
+(1, '12:00', '13:00', 'all', 30), (1, '13:00', '14:00', 'all', 30), (1, '14:00', '15:00', 'all', 30),
+(1, '15:00', '16:00', 'all', 30), (1, '16:00', '17:00', 'all', 30), (1, '17:00', '18:00', 'all', 30),
+(1, '18:00', '19:00', 'all', 30), (1, '19:00', '20:00', 'all', 30),
+-- Mirissa Beach Pool (facility_id = 6)
+(6, '06:00', '07:00', 'all', 40), (6, '07:00', '08:00', 'all', 40), (6, '08:00', '09:00', 'all', 40),
+(6, '09:00', '10:00', 'all', 40), (6, '10:00', '11:00', 'all', 40), (6, '11:00', '12:00', 'all', 40),
+(6, '12:00', '13:00', 'all', 40), (6, '13:00', '14:00', 'all', 40), (6, '14:00', '15:00', 'all', 40),
+(6, '15:00', '16:00', 'all', 40), (6, '16:00', '17:00', 'all', 40), (6, '17:00', '18:00', 'all', 40),
+(6, '18:00', '19:00', 'all', 40),
+-- Kandy Mountain View Pool (facility_id = 9)
+(9, '07:00', '08:00', 'all', 25), (9, '08:00', '09:00', 'all', 25), (9, '09:00', '10:00', 'all', 25),
+(9, '10:00', '11:00', 'all', 25), (9, '11:00', '12:00', 'all', 25), (9, '12:00', '13:00', 'all', 25),
+(9, '13:00', '14:00', 'all', 25), (9, '14:00', '15:00', 'all', 25), (9, '15:00', '16:00', 'all', 25),
+(9, '16:00', '17:00', 'all', 25), (9, '17:00', '18:00', 'all', 25), (9, '18:00', '19:00', 'all', 25);
+
+-- Spa Slots (All Branches)
+INSERT INTO FacilitySlot (facility_id, start_time, end_time, day_of_week, max_capacity) VALUES
+-- Colombo Serenity Spa (facility_id = 3)
+(3, '09:00', '10:00', 'all', 4), (3, '10:00', '11:00', 'all', 4), (3, '11:00', '12:00', 'all', 4),
+(3, '14:00', '15:00', 'all', 4), (3, '15:00', '16:00', 'all', 4), (3, '16:00', '17:00', 'all', 4),
+(3, '17:00', '18:00', 'all', 4), (3, '18:00', '19:00', 'all', 4), (3, '19:00', '20:00', 'all', 4),
+-- Mirissa Ayurveda Retreat (facility_id = 7)
+(7, '08:00', '09:30', 'all', 3), (7, '09:30', '11:00', 'all', 3), (7, '11:00', '12:30', 'all', 3),
+(7, '13:00', '14:30', 'all', 3), (7, '14:30', '16:00', 'all', 3), (7, '16:00', '17:30', 'all', 3),
+(7, '17:30', '19:00', 'all', 3), (7, '19:00', '20:00', 'all', 3),
+-- Kandy Tea Garden Spa (facility_id = 10)
+(10, '09:00', '10:00', 'all', 2), (10, '10:00', '11:00', 'all', 2), (10, '11:00', '12:00', 'all', 2),
+(10, '13:00', '14:00', 'all', 2), (10, '14:00', '15:00', 'all', 2), (10, '15:00', '16:00', 'all', 2),
+(10, '16:00', '17:00', 'all', 2), (10, '17:00', '18:00', 'all', 2), (10, '18:00', '19:00', 'all', 2);
+
+-- Event Hall Slots (All Branches)
+INSERT INTO FacilitySlot (facility_id, start_time, end_time, day_of_week, max_capacity) VALUES
+-- Colombo Grand Ballroom (facility_id = 4)
+(4, '08:00', '12:00', 'all', 300), (4, '13:00', '17:00', 'all', 300), (4, '18:00', '23:00', 'all', 300),
+-- Mirissa Sunset Pavilion (facility_id = 8)
+(8, '10:00', '14:00', 'all', 150), (8, '15:00', '18:00', 'all', 150), (8, '18:00', '23:00', 'all', 150),
+-- Kandy Colonial Hall (facility_id = 11)
+(11, '09:00', '13:00', 'all', 200), (11, '14:00', '18:00', 'all', 200), (11, '18:00', '22:00', 'all', 200);
+
+-- Meeting Room Slots
+INSERT INTO FacilitySlot (facility_id, start_time, end_time, day_of_week, max_capacity) VALUES
+-- Colombo Boardroom One (facility_id = 5)
+(5, '08:00', '09:00', 'all', 20), (5, '09:00', '10:00', 'all', 20), (5, '10:00', '11:00', 'all', 20),
+(5, '11:00', '12:00', 'all', 20), (5, '13:00', '14:00', 'all', 20), (5, '14:00', '15:00', 'all', 20),
+(5, '15:00', '16:00', 'all', 20), (5, '16:00', '17:00', 'all', 20), (5, '17:00', '18:00', 'all', 20);
+
+-- Sample Add-ons
+INSERT INTO FacilityAddOn (branch_id, name, description, price, price_type, category) VALUES
+(1, 'Standard Lunch Buffet', 'Sri Lankan and international cuisine', 2500.00, 'per_person', 'catering'),
+(1, 'Premium Dinner Buffet', 'Gourmet buffet with live cooking', 4500.00, 'per_person', 'catering'),
+(1, 'Standard Decoration', 'Floral arrangements and table settings', 45000.00, 'flat', 'decoration'),
+(1, 'Premium Sound System', 'DJ-grade sound system with operator', 35000.00, 'flat', 'equipment'),
+(1, 'Professional Photography', '8-hour coverage', 85000.00, 'flat', 'service');
+
+-- =====================================================
 -- END OF SCHEMA
 -- =====================================================
 
@@ -672,4 +899,5 @@ SELECT CONCAT('Total Branches: ', COUNT(*)) AS info FROM Branch;
 SELECT CONCAT('Total Users: ', COUNT(*)) AS info FROM User;
 SELECT CONCAT('Total Rooms: ', COUNT(*)) AS info FROM Room;
 SELECT CONCAT('Total Bookings: ', COUNT(*)) AS info FROM Booking;
+SELECT CONCAT('Total Facilities: ', COUNT(*)) AS info FROM Facility;
 

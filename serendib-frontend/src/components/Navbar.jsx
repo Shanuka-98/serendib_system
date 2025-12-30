@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Menu, X, User, LogOut, Calendar, Bed,
+  Menu, X, User, LogOut, Calendar, Bed, Waves,
   Settings, BarChart3, Users, Building2, FileText,
   CheckCircle, AlertCircle, Award, Search, ChevronDown, 
   LayoutDashboard, Cog, ConciergeBell, Clock
@@ -38,10 +38,19 @@ const Navbar = () => {
 
   // Guest Navigation
   const guestNavItems = [
-    { path: '/rooms', label: 'Browse Rooms', icon: Search },
-    { path: '/service-requests', label: 'Services', icon: ConciergeBell },
-    { path: '/my-bookings', label: 'My Bookings', icon: Calendar },
-    { path: '/loyalty', label: 'Rewards', icon: Award },
+    { path: '/rooms', label: 'Browse Rooms', icon: Search, type: 'link' },
+    { path: '/facilities', label: 'Facilities', icon: Waves, type: 'link' },
+    { path: '/service-requests', label: 'Services', icon: ConciergeBell, type: 'link' },
+    {
+      label: 'My Bookings',
+      icon: Calendar,
+      type: 'dropdown',
+      items: [
+        { path: '/my-bookings', label: 'Room Bookings', icon: Bed },
+        { path: '/my-facility-bookings', label: 'Facility Bookings', icon: Waves },
+      ]
+    },
+    { path: '/loyalty', label: 'Rewards', icon: Award, type: 'link' },
   ]
 
   // Roles that use "My Work" (Non-Managerial)
@@ -66,6 +75,7 @@ const Navbar = () => {
       items: [
         { path: '/staff/check-in-out', label: 'Check-in/Out', icon: User, allowedRoleTypes: ['manager', 'front_desk'] },
         { path: '/staff/bookings', label: 'All Bookings', icon: Calendar, allowedRoleTypes: ['manager', 'front_desk'] },
+        { path: '/staff/facility-bookings', label: 'Event Inquiries', icon: Waves, allowedRoleTypes: ['manager'] },
         { path: '/staff/room-status', label: 'Room Status', icon: Bed, allowedRoleTypes: ['manager', 'front_desk', 'maintenance'] },
         { path: '/staff/services', label: 'Service Requests', icon: AlertCircle, allowedRoleTypes: ['manager', 'front_desk'] },
         { path: '/staff/schedule', label: 'Staff Schedule', icon: Clock, allowedRoleTypes: ['manager', 'front_desk'] }, // Manager View
@@ -82,6 +92,7 @@ const Navbar = () => {
       items: [
         { path: '/admin/users', label: 'Users', icon: Users },
         { path: '/admin/rooms', label: 'Rooms', icon: Bed },
+        { path: '/admin/facilities', label: 'Facilities', icon: Waves },
         { path: '/admin/branches', label: 'Branches', icon: Building2 },
         { path: '/admin/services', label: 'Service Catalog', icon: ConciergeBell },
         { path: '/admin/promotions', label: 'Promotions', icon: Award },
@@ -270,24 +281,76 @@ const Navbar = () => {
             </div>
           )}
 
-          {/* Desktop Navigation - Guest (flat list) */}
+          {/* Desktop Navigation - Guest with Dropdowns */}
           {isAuthenticated && isGuest && navItems.length > 0 && (
-            <div className="hidden md:flex items-center gap-1">
+            <div className="hidden md:flex items-center gap-1 ml-4" ref={dropdownRef}>
               {navItems.map((item) => {
                 const Icon = item.icon
+                
+                if (item.type === 'link') {
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
+                        isActive(item.path)
+                          ? 'bg-primary-500 text-white shadow-lg'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  )
+                }
+
+                // Dropdown menu
+                const isDropdownActive = item.items?.some(i => isActive(i.path))
                 return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
-                      isActive(item.path)
-                        ? 'bg-primary-500 text-white shadow-lg'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {item.label}
-                  </Link>
+                  <div key={item.label} className="relative">
+                    <button
+                      onClick={() => toggleDropdown(item.label)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
+                        isDropdownActive || activeDropdown === item.label
+                          ? 'bg-primary-100 text-primary-700'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {item.label}
+                      <ChevronDown className={`h-3 w-3 transition-transform ${activeDropdown === item.label ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    <AnimatePresence>
+                      {activeDropdown === item.label && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="absolute top-full left-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50"
+                        >
+                          {item.items.map((subItem) => {
+                            const SubIcon = subItem.icon
+                            return (
+                              <Link
+                                key={subItem.path}
+                                to={subItem.path}
+                                onClick={() => setActiveDropdown(null)}
+                                className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-all ${
+                                  isActive(subItem.path)
+                                    ? 'bg-primary-50 text-primary-700 font-medium'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                                }`}
+                              >
+                                <SubIcon className="h-4 w-4" />
+                                {subItem.label}
+                              </Link>
+                            )
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 )
               })}
             </div>
@@ -354,6 +417,14 @@ const Navbar = () => {
                           >
                             <Calendar className="h-4 w-4" />
                             My Bookings
+                          </Link>
+                          <Link
+                            to="/my-facility-bookings"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <Waves className="h-4 w-4" />
+                            Facility Bookings
                           </Link>
                         </>
                       )}

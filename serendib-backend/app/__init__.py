@@ -77,6 +77,8 @@ def register_blueprints(app):
     from app.routes.stripe_payments import stripe_bp
     from app.routes.promotions import promotions_bp
     from app.routes.shifts import shifts_bp
+    from app.routes.facilities import facilities_bp
+    from app.routes.facility_stripe import facility_stripe_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(rooms_bp, url_prefix='/api/rooms')
@@ -90,6 +92,8 @@ def register_blueprints(app):
     app.register_blueprint(stripe_bp, url_prefix='/api/stripe')
     app.register_blueprint(promotions_bp, url_prefix='/api/promotions')
     app.register_blueprint(shifts_bp, url_prefix='/api/shifts')
+    app.register_blueprint(facilities_bp, url_prefix='/api/facilities')
+    app.register_blueprint(facility_stripe_bp, url_prefix='/api/facility-stripe')
     
     from app.routes.services import services_bp
     app.register_blueprint(services_bp, url_prefix='/api/admin/services')

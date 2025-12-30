@@ -140,6 +140,24 @@ const BillModal = ({ booking, onClose, onConfirmCheckout }) => {
             </div>
           )}
 
+          {/* Facility Bookings */}
+          {bill?.facilities && bill.facilities.length > 0 && (
+            <div className="mb-4 pb-4 border-b border-gray-200">
+              <p className="text-xs font-bold text-gray-500 uppercase mb-2">Facility Bookings</p>
+              {bill.facilities.map((fac, idx) => (
+                <div key={idx} className="flex justify-between text-sm mb-1">
+                  <div>
+                    <span className="text-gray-700 block">{fac.facility_name}</span>
+                    <span className="text-gray-400 text-xs block">
+                      {fac.date} • {fac.guests} Guest{fac.guests > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <span className="font-medium">LKR {fac.price?.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Summary */}
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">

@@ -16,6 +16,7 @@ from app.models.audit_log import AuditLog
 from app.models.property_config import PropertyConfig
 from app.models.promotion import Promotion
 from app.models.shift import Shift
+from app.models.facility import Facility, FacilitySlot, FacilityBooking, FacilityAddOn
 
 __all__ = [
     'Branch',
@@ -30,5 +31,9 @@ __all__ = [
     'AuditLog',
     'PropertyConfig',
     'Promotion',
-    'Shift'
+    'Shift',
+    'Facility',
+    'FacilitySlot',
+    'FacilityBooking',
+    'FacilityAddOn'
 ]

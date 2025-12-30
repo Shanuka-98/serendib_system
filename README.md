@@ -1,6 +1,6 @@
 # Serendib Smart Hotel Management System - Complete Project Documentation
 
-**Last Updated:** December 29, 2025  
+**Last Updated:** December 30, 2025  
 **Overall Progress:** **100% Complete** - All Features Implemented
 
 > **Note:** This is the comprehensive project documentation. All project status, information, and recent updates are consolidated here.
@@ -29,10 +29,10 @@
 ### **Complete Backend (Flask API)** - 100% Functional
 
 #### Database (MySQL)
-- `database/schema.sql` - Complete schema with **13 tables** and proper relationships.
-- **Recent Update:** Added `Shift` table for scheduling and **Service Pricing** columns (`price`, `is_chargeable`) to `ServiceRequest`.
-- Models for Branch, User, Room, Booking, Payment, ServiceRequest, Notification, Staff, LoyaltyProgram, LoyaltyHistory, AuditLog, PropertyConfig, Promotion, **Shift**.
-- 3 active branches (Colombo, Mirissa, Kandy).
+- `database/schema.sql` - Complete schema with **17 tables** and proper relationships.
+- **Recent Update:** Added `Facility`, `FacilitySlot`, `FacilityBooking`, `FacilityAddOn` tables for facility booking system.
+- Models for Branch, User, Room, Booking, Payment, ServiceRequest, Notification, Staff, LoyaltyProgram, LoyaltyHistory, AuditLog, PropertyConfig, Promotion, Shift, **Facility**, **FacilitySlot**, **FacilityBooking**, **FacilityAddOn**.
+- 3 active branches (Colombo, Mirissa, Kandy) with 11 facilities.
 
 #### API Routes (Fully Integrated)
 - **Authentication**: JWT-based (Login, Register, Refresh, Profile).
@@ -44,6 +44,7 @@
 - **Service Requests**: Create, Assign, Update Status, Priority Management.
 - **Staff Operations**: Real-time Room Status, Check-In/Out with **Guest Photo Upload**.
 - **Staff Scheduling**: Shift management with overlap detection, weekly calendar view.
+- **Facility Booking**: Pool, gym, spa slot booking; event hall inquiry/quote workflow.
 - **Admin Dashboard**: Analytics (Revenue, Occupancy), User & Branch Management, Audit Logs.
 - **Analytics**: Comprehensive charts for business insights.
 
@@ -73,6 +74,7 @@
 - **Booking Details** (`/bookings/:id`): Full booking info, print receipt.
 - **Rewards** (`/loyalty`): Points balance, tier status, redeem points.
 - **Service Requests** (`/service-requests`): Request room service, housekeeping, etc.
+- **Facilities** (`/facilities`): Browse and book pools, gyms, spas; submit event hall inquiries.
 - **Profile** (`/profile`): View and edit profile, change password.
 
 **2. Staff Dashboard (100%)**
@@ -93,11 +95,46 @@
 - **Analytics** (`/admin/analytics`): Revenue, occupancy, booking trends, insights.
 - **Audit Logs** (`/admin/audit-logs`): Traceable history of system actions.
 - **Settings** (`/admin/settings`): SMS toggle controls, system configuration.
+- **Facility Management** (`/admin/facilities`): CRUD for facilities, slot configuration, add-ons.
 - **Profile** (`/admin/profile`): Admin profile management.
 
 #### Third-Party Integrations
 - **Stripe Payments**: Secure credit card processing using Payment Intents and Webhooks.
 - **Text.lk SMS Gateway**: SMS notifications for bookings, payments, and cancellations with admin toggle controls.
+
+## Recent Updates (December 30, 2025)
+
+### 🏊 Facility Booking System
+Implemented a unified facility booking system for pools, gyms, spas, and event halls.
+
+**New Database Tables:**
+| Table | Purpose |
+|-------|----------|
+| `Facility` | Pool, gym, spa, event halls, meeting rooms |
+| `FacilitySlot` | Time slot configuration with capacity |
+| `FacilityBooking` | Guest reservations and event inquiries |
+| `FacilityAddOn` | Catering, decoration, equipment add-ons |
+
+**Key Features:**
+1. **Shared Facilities**: Free pool/gym access for guests with slot-based capacity management.
+2. **Chargeable Services**: Spa sessions with "Add to Room Bill" integration.
+3. **Event Hall Workflow**: Inquiry → Quote (by Manager) → Payment (Stripe) → Confirmation.
+4. **Payment Flexibility**: Room-linked billing for facility and direct Stripe payments for events.
+5. **Admin Management**: Full CRUD for facilities, slots, and add-ons.
+
+**New Pages:**
+- Guest: `/facilities` - Browse and book facilities, submit event inquiries.
+- Admin: `/admin/facilities` - Manage facilities, configure time slots.
+
+**API Endpoints Added:**
+- `GET/POST /api/facilities` - List and create facilities
+- `GET/PUT/DELETE /api/facilities/:id` - Facility CRUD
+- `GET/POST /api/facilities/:id/slots` - Slot management
+- `GET/POST /api/facilities/bookings` - Booking management
+- `POST /api/facilities/bookings/:id/quote` - Create quotes (Manager only)
+- `GET /api/facilities/calendar` - Event calendar view
+
+---
 
 ## Recent Updates (December 29, 2025)
 

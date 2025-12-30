@@ -211,6 +211,18 @@ class Booking(db.Model):
         # Update room status
         self.room.status = 'available'
         
+        # Settle facility bookings (add_to_bill)
+        from app.models.facility import FacilityBooking
+        pending_facility_bookings = FacilityBooking.query.filter(
+            FacilityBooking.room_booking_id == self.booking_id,
+            FacilityBooking.payment_type == 'add_to_bill',
+            FacilityBooking.payment_status == 'pending'
+        ).all()
+        
+        for fb in pending_facility_bookings:
+            fb.payment_status = 'paid'
+            fb.status = 'completed'
+        
         db.session.commit()
         
         return True, "Guest checked out successfully"

@@ -223,3 +223,29 @@ export const serviceAPI = {
   updateService: (id, data) => api.put(`/admin/services/${id}`, data),
   deleteService: (id) => api.delete(`/admin/services/${id}`),
 }
+
+// Facility API - Pool, Gym, Spa, Event Halls booking
+export const facilityAPI = {
+  // Facilities
+  getFacilities: (params) => api.get('/facilities', { params }),
+  getFacility: (id, params) => api.get(`/facilities/${id}`, { params }),
+  createFacility: (data) => api.post('/facilities', data),
+  updateFacility: (id, data) => api.put(`/facilities/${id}`, data),
+  deleteFacility: (id) => api.delete(`/facilities/${id}`),
+  // Slots
+  getSlots: (id, date) => api.get(`/facilities/${id}/slots`, { params: { date } }),
+  createSlot: (id, data) => api.post(`/facilities/${id}/slots`, data),
+  deleteSlot: (slotId) => api.delete(`/facilities/slots/${slotId}`),
+  // Bookings
+  getFacilityBookings: (params) => api.get('/facilities/bookings', { params }),
+  getFacilityBooking: (id) => api.get(`/facilities/bookings/${id}`),
+  cancelFacilityBooking: (id) => api.delete(`/facilities/bookings/${id}`),
+  createFacilityBooking: (data) => api.post('/facilities/bookings', data),
+  updateFacilityBooking: (id, data) => api.put(`/facilities/bookings/${id}`, data),
+  createQuote: (id, data) => api.post(`/facilities/bookings/${id}/quote`, data),
+  // Add-ons
+  getAddons: (params) => api.get('/facilities/addons', { params }),
+  createAddon: (data) => api.post('/facilities/addons', data),
+  // Calendar
+  getEventCalendar: (params) => api.get('/facilities/calendar', { params }),
+}

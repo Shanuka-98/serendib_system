@@ -629,9 +629,10 @@ def get_booking_bill(booking_id):
     """
     Get itemized bill for a booking (for checkout)
     
-    Returns room charges, service charges, taxes, and balance due
+    Returns room charges, service charges, facility charges, taxes, and balance due
     """
     from app.models.service_request import ServiceRequest
+    from app.models.facility import FacilityBooking
     
     current_user = get_current_user()
     booking = Booking.query.get(booking_id)
@@ -673,6 +674,29 @@ def get_booking_bill(booking_id):
             'price': price
         })
     
+    # Get facility bookings charged to room bill
+    facility_bookings = FacilityBooking.query.filter(
+        FacilityBooking.room_booking_id == booking_id,
+        FacilityBooking.payment_type == 'add_to_bill',
+        FacilityBooking.status.in_(['confirmed', 'completed', 'in_progress']),
+        FacilityBooking.payment_status.in_(['pending', 'not_required'])
+    ).all()
+    
+    facility_items = []
+    facilities_total = 0
+    for fb in facility_bookings:
+        price = float(fb.total_amount) if fb.total_amount else 0
+        facilities_total += price
+        facility_items.append({
+            'booking_id': fb.booking_id,
+            'facility_name': fb.facility.name if fb.facility else 'Facility',
+            'facility_type': fb.facility.facility_type if fb.facility else '',
+            'date': fb.booking_date.strftime('%Y-%m-%d') if fb.booking_date else None,
+            'time': f"{fb.start_time.strftime('%H:%M')}-{fb.end_time.strftime('%H:%M')}" if fb.start_time and fb.end_time else None,
+            'guests': fb.number_of_guests,
+            'price': price
+        })
+    
     # Tax rates from branch
     tax_rate = float(booking.room.branch.tax_rate) / 100 if booking.room and booking.room.branch else 0.13
     
@@ -686,8 +710,8 @@ def get_booking_bill(booking_id):
         except (ValueError, TypeError):
             service_charge_rate = 0.10
     
-    # Calculations
-    subtotal = room_total + services_total
+    # Calculations (including facilities)
+    subtotal = room_total + services_total + facilities_total
     service_charge = subtotal * service_charge_rate
     taxable_amount = subtotal + service_charge
     tax = taxable_amount * tax_rate
@@ -725,11 +749,14 @@ def get_booking_bill(booking_id):
         },
         'services': service_items,
         'services_total': services_total,
+        'facilities': facility_items,
+        'facilities_total': facilities_total,
         'service_charge_rate': service_charge_rate,
         'tax_rate': tax_rate,
         'summary': {
             'room_total': room_total,
             'services_subtotal': services_total,
+            'facilities_subtotal': facilities_total,
             'subtotal': subtotal,
             'service_charge': round(service_charge, 2),
             'tax': round(tax, 2),

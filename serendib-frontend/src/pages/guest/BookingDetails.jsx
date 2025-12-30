@@ -474,17 +474,39 @@ const BillSummary = ({ bill }) => {
       </div>
 
       {/* Services */}
-      {bill.services.map((svc, i) => (
-        <div key={i} className="flex justify-between items-center text-sm group hover:bg-gray-50 p-2 rounded-lg transition-colors -mx-2">
-          <div>
-            <p className="text-gray-700 font-medium">{svc.type}</p>
-            <p className="text-xs text-gray-500">{svc.date}</p>
-          </div>
-          <p className="font-medium text-gray-700">{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(svc.price)}</p>
+      {bill.services.length > 0 && (
+        <div className="space-y-2 pb-3 border-b border-gray-100">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Services & Amenities</p>
+          {bill.services.map((svc, i) => (
+            <div key={i} className="flex justify-between items-center text-sm group hover:bg-gray-50 p-2 rounded-lg transition-colors -mx-2">
+              <div>
+                <p className="text-gray-700 font-medium">{svc.type}</p>
+                <p className="text-xs text-gray-500">{svc.date}</p>
+              </div>
+              <p className="font-medium text-gray-700">{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(svc.price)}</p>
+            </div>
+          ))}
         </div>
-      ))}
-      {bill.services.length === 0 && (
-        <p className="text-sm text-gray-400 italic py-2">No additional services charged yet.</p>
+      )}
+
+      {/* Facilities */}
+      {bill.facilities && bill.facilities.length > 0 && (
+        <div className="space-y-2 pb-3 border-b border-gray-100">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Facility Bookings</p>
+          {bill.facilities.map((fac, i) => (
+            <div key={i} className="flex justify-between items-center text-sm group hover:bg-gray-50 p-2 rounded-lg transition-colors -mx-2">
+              <div>
+                <p className="text-gray-700 font-medium">{fac.facility_name}</p>
+                <p className="text-xs text-gray-500">{fac.date} • {fac.guests} Guest{fac.guests > 1 ? 's' : ''}</p>
+              </div>
+              <p className="font-medium text-gray-700">{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(fac.price)}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {bill.services.length === 0 && (!bill.facilities || bill.facilities.length === 0) && (
+        <p className="text-sm text-gray-400 italic py-2">No additional services or facilities charged.</p>
       )}
 
       {/* Totals */}

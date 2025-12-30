@@ -7,6 +7,7 @@ erDiagram
     User ||--o{ ServiceRequest : "requests"
     User ||--o{ Notification : "receives"
     User ||--o{ AuditLog : "triggers"
+    User ||--o{ FacilityBooking : "reserves"
     
     Branch ||--o{ User : "employs"
     Branch ||--o{ Room : "contains"
@@ -15,6 +16,22 @@ erDiagram
     Branch ||--o{ Promotion : "offers"
     Branch ||--o{ PropertyConfig : "configures"
     Branch ||--o{ Shift : "schedules"
+    Branch ||--o{ Facility : "has"
+    Branch ||--o{ FacilityAddOn : "offers"
+
+    User ||--o{ Shift : "assigned_to"
+
+    Room ||--o{ Booking : "reserved_in"
+    
+    Booking ||--o{ Payment : "has"
+    Booking ||--o{ ServiceRequest : "includes"
+    Booking ||--o{ FacilityBooking : "linked_to"
+    
+    Facility ||--o{ FacilitySlot : "has_slots"
+    Facility ||--o{ FacilityBooking : "booked_for"
+    Facility ||--o{ FacilityAddOn : "offers"
+    FacilitySlot ||--o{ FacilityBooking : "reserved_in"
+    ServiceType ||--o{ ServiceRequest : "defines"
 
     User ||--o{ Shift : "assigned_to"
 
@@ -234,4 +251,72 @@ erDiagram
         text notes
         datetime created_at
         datetime updated_at
+    }
+
+    Facility {
+        int facility_id PK
+        int branch_id FK
+        string name
+        enum facility_type "pool|gym|spa|event_hall|meeting_room"
+        text description
+        int capacity
+        decimal price_per_slot
+        int slot_duration_minutes
+        bool requires_booking
+        bool is_guest_only
+        bool is_active
+        json amenities
+        json images
+        json operating_hours
+        text rules
+        datetime created_at
+        datetime updated_at
+    }
+
+    FacilitySlot {
+        int slot_id PK
+        int facility_id FK
+        time start_time
+        time end_time
+        enum day_of_week "monday|tuesday|...|all"
+        int max_capacity
+        decimal price_override
+        bool is_active
+    }
+
+    FacilityBooking {
+        int booking_id PK
+        int facility_id FK
+        int slot_id FK
+        int user_id FK
+        int room_booking_id FK
+        date booking_date
+        time start_time
+        time end_time
+        int number_of_guests
+        enum status "inquiry|quoted|pending|confirmed|completed|cancelled"
+        string event_type
+        string event_name
+        string contact_name
+        string contact_email
+        decimal total_amount
+        decimal deposit_amount
+        bool deposit_paid
+        enum payment_type "free|pay_now|add_to_bill|deposit_required"
+        enum payment_status "not_required|pending|partial|paid|refunded"
+        text special_requests
+        text admin_notes
+        datetime created_at
+    }
+
+    FacilityAddOn {
+        int addon_id PK
+        int facility_id FK
+        int branch_id FK
+        string name
+        text description
+        decimal price
+        enum price_type "flat|per_person|per_hour"
+        enum category "catering|decoration|equipment|service|other"
+        bool is_active
     }

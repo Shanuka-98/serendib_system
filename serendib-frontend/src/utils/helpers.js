@@ -16,6 +16,19 @@ export const formatBookingRef = (bookingId, year = null) => {
 }
 
 /**
+ * Format facility booking ID to a professional reference number
+ * Example: 9 -> "FAC-2024-000009"
+ * @param {number} bookingId 
+ * @param {string|Date} date - Date to extract year from (optional)
+ * @returns {string} Formatted reference
+ */
+export const formatFacilityRef = (bookingId, date = null) => {
+  const year = date ? new Date(date).getFullYear() : new Date().getFullYear()
+  const paddedId = String(bookingId).padStart(6, '0')
+  return `FAC-${year}-${paddedId}`
+}
+
+/**
  * Format currency for LKR
  * @param {number} amount - The amount to format
  * @returns {string} Formatted currency string

@@ -26,6 +26,9 @@ import AboutPage from './pages/guest/About'
 import ContactPage from './pages/guest/Contact'
 import CareersPage from './pages/guest/Careers'
 import PrivacyPage from './pages/guest/Privacy'
+import FacilitiesPage from './pages/guest/Facilities'
+import MyFacilityBookingsPage from './pages/guest/MyFacilityBookings'
+import FacilityBookingDetailsPage from './pages/guest/FacilityBookingDetails'
 
 // Staff Pages
 import StaffDashboard from './pages/staff/Dashboard'
@@ -35,8 +38,11 @@ import RoomStatusPage from './pages/staff/RoomStatus'
 import StaffBookingsPage from './pages/staff/Bookings'
 import StaffBookingDetails from './pages/staff/BookingDetails'
 import StaffSchedulePage from './pages/staff/StaffSchedule'
-import MyTasksPage from './pages/staff/MyTasks'
+import StaffFacilityBookings from './pages/staff/StaffFacilityBookings'
+import StaffFacilityBookingDetails from './pages/staff/StaffFacilityBookingDetails'
+// import MyTasksPage from './pages/staff/MyTasks'
 import ServiceDetailsPage from './pages/staff/ServiceDetails'
+import MyTasksPage from './pages/staff/MyTasks'
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard'
@@ -49,6 +55,7 @@ import AnalyticsPage from './pages/admin/Analytics'
 import AuditLogsPage from './pages/admin/AuditLogs'
 import AdminProfile from './pages/admin/Profile'
 import AdminSettings from './pages/admin/Settings'
+import FacilityManagement from './pages/admin/FacilityManagement'
 
 function App() {
   return (
@@ -78,6 +85,9 @@ function App() {
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/booking/success" element={<ProtectedRoute><BookingSuccess /></ProtectedRoute>} />
           <Route path="/booking/cancel" element={<ProtectedRoute><BookingCancel /></ProtectedRoute>} />
+          <Route path="/facilities" element={<FacilitiesPage />} />
+          <Route path="/my-facility-bookings" element={<ProtectedRoute><MyFacilityBookingsPage /></ProtectedRoute>} />
+          <Route path="/facilities/bookings/:id" element={<ProtectedRoute><FacilityBookingDetailsPage /></ProtectedRoute>} />
           
           {/* Staff Routes */}
           {/* Staff Dashboard - Accessible by all staff */}
@@ -94,6 +104,10 @@ function App() {
           <Route path="/staff/bookings" element={<ProtectedRoute roles={['staff', 'admin']} allowedRoleTypes={['manager', 'front_desk']}><StaffBookingsPage /></ProtectedRoute>} />
           <Route path="/staff/bookings/:id" element={<ProtectedRoute roles={['staff', 'admin']} allowedRoleTypes={['manager', 'front_desk']}><StaffBookingDetails /></ProtectedRoute>} />
           <Route path="/staff/check-in-out" element={<ProtectedRoute roles={['staff', 'admin']} allowedRoleTypes={['manager', 'front_desk']}><CheckInOutPage /></ProtectedRoute>} />
+          
+          {/* Facility & Event Management - Manager Only */}
+          <Route path="/staff/facility-bookings" element={<ProtectedRoute roles={['staff', 'admin']} allowedRoleTypes={['manager']}><StaffFacilityBookings /></ProtectedRoute>} />
+          <Route path="/staff/facility-bookings/:id" element={<ProtectedRoute roles={['staff', 'admin']} allowedRoleTypes={['manager']}><StaffFacilityBookingDetails /></ProtectedRoute>} />
           
           {/* Room Status - Broader operational access */}
           <Route path="/staff/room-status" element={<ProtectedRoute roles={['staff', 'admin']} allowedRoleTypes={['manager', 'front_desk', 'maintenance']}><RoomStatusPage /></ProtectedRoute>} />
@@ -115,6 +129,7 @@ function App() {
           <Route path="/admin/audit-logs" element={<ProtectedRoute roles={['admin']}><AuditLogsPage /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute roles={['admin']}><AdminSettings /></ProtectedRoute>} />
           <Route path="/admin/profile" element={<ProtectedRoute roles={['admin']}><AdminProfile /></ProtectedRoute>} />
+          <Route path="/admin/facilities" element={<ProtectedRoute roles={['admin']}><FacilityManagement /></ProtectedRoute>} />
           
           {/* 404 */}
           <Route path="*" element={<Navigate to="/" replace />} />

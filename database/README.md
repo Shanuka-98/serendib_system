@@ -43,21 +43,31 @@ python fix_passwords.py
 | **PropertyConfig** | Branch configs |
 | **Promotion** | Discount codes |
 | **Shift** | Staff schedule assignments |
+| **Facility** | Pool, gym, spa, event halls |
+| **FacilitySlot** | Time slots for facilities |
+| **FacilityBooking** | Facility reservations |
+| **FacilityAddOn** | Catering, decoration, equipment |
 
 ### Recent Schema Updates
+- **Facility Booking System (Dec 2025):** Added `Facility`, `FacilitySlot`, `FacilityBooking`, `FacilityAddOn` tables for pool/gym/spa/event hall management.
 - **Service Pricing:** Added `price`, `is_chargeable`, `is_billed`, `billed_at` to `ServiceRequest` table for itemized billing.
 
 ## Migration Notes
-If you are updating an existing database, run the consolidated migration script:
+If you are updating an existing database, run the facility tables migration:
 
+```bash
+mysql -u root -p serendib_hotels < facility_tables.sql
+```
+
+Then update facility images for existing records:
+```bash
+mysql -u root -p serendib_hotels < update_facility_images.sql
+```
+
+Run the dynamic services migration if needed:
 ```bash
 mysql -u root -p serendib_hotels < migration_add_dynamic_services.sql
 ```
-
-This script will:
-1. Add pricing columns to `ServiceRequest` (if missing).
-2. Create and populate the `ServiceType` catalog.
-3. Update `ServiceRequest` to support dynamic types.
 
 ## Entity Relationship Diagram
 
@@ -71,6 +81,7 @@ erDiagram
     User ||--o{ ServiceRequest : "requests"
     User ||--o{ Notification : "receives"
     User ||--o{ AuditLog : "triggers"
+    User ||--o{ FacilityBooking : "reserves"
     
     Branch ||--o{ User : "employs"
     Branch ||--o{ Room : "contains"
@@ -79,6 +90,8 @@ erDiagram
     Branch ||--o{ Promotion : "offers"
     Branch ||--o{ PropertyConfig : "configures"
     Branch ||--o{ Shift : "schedules"
+    Branch ||--o{ Facility : "has"
+    Branch ||--o{ FacilityAddOn : "offers"
 
     User ||--o{ Shift : "assigned_to"
 
@@ -86,6 +99,13 @@ erDiagram
     
     Booking ||--o{ Payment : "has"
     Booking ||--o{ ServiceRequest : "includes"
+    Booking ||--o{ FacilityBooking : "linked_to"
+    
+    Facility ||--o{ FacilitySlot : "has_slots"
+    Facility ||--o{ FacilityBooking : "booked_for"
+    Facility ||--o{ FacilityAddOn : "offers"
+    FacilitySlot ||--o{ FacilityBooking : "reserved_in"
+    ServiceType ||--o{ ServiceRequest : "defines"
 
     User {
         int user_id PK
@@ -93,17 +113,13 @@ erDiagram
         string password_hash
         string full_name
         string phone
-        enum role "guest|staff|admin"
-        enum role_type "front_desk|housekeeping|food_beverage|maintenance|concierge|spa|manager"
+        enum role
+        enum role_type
         int branch_id FK
         bool is_verified
-        string verification_token
-        string reset_token
-        datetime reset_token_expiry
         bool is_active
         datetime last_login
         datetime created_at
-        datetime updated_at
     }
 
     Branch {
@@ -115,23 +131,19 @@ erDiagram
         decimal tax_rate
         json contact_info
         datetime created_at
-        datetime updated_at
     }
 
     Room {
         int room_id PK
         int branch_id FK
         string room_number
-        enum room_type "standard|deluxe|suite|penthouse"
+        enum room_type
         int capacity
         decimal price_per_night
-        enum status "available|occupied|maintenance|reserved"
+        enum status
         json amenities
         int floor
         text description
-        json image_urls
-        datetime created_at
-        datetime updated_at
     }
 
     Booking {
@@ -142,18 +154,12 @@ erDiagram
         date check_in_date
         date check_out_date
         decimal total_amount
-        enum status "pending|confirmed|checked_in|checked_out|cancelled"
+        enum status
         datetime booking_date
         text special_requests
         int number_of_guests
-        text cancellation_reason
-        datetime cancelled_at
-        datetime checked_in_at
-        datetime checked_out_at
         string promo_code
         decimal promo_discount
-        int loyalty_points_redeemed
-        decimal points_discount
         decimal loyalty_discount
     }
 
@@ -162,23 +168,19 @@ erDiagram
         int booking_id FK
         int user_id FK
         decimal amount
-        enum payment_method "credit_card|debit_card|paypal|bank_transfer|cash"
-        enum payment_status "pending|completed|failed|refunded"
+        enum payment_method
+        enum payment_status
         string transaction_id
         datetime payment_date
-        decimal refund_amount
-        datetime refund_date
-        json payment_details
     }
 
     Staff {
         int staff_id PK
-        int user_id FK "UNIQUE"
+        int user_id FK
         int branch_id FK
         string position
-        enum department "front_desk|housekeeping|maintenance|food_beverage|management|security"
+        enum department
         date hire_date
-        json schedule
         string employee_id UK
         decimal salary
         bool is_active
@@ -186,66 +188,68 @@ erDiagram
 
     LoyaltyProgram {
         int loyalty_id PK
-        int user_id FK "UNIQUE"
+        int user_id FK
         int points
-        enum tier "bronze|silver|gold|platinum"
+        enum tier
         datetime join_date
         int lifetime_points
-        datetime last_activity
     }
 
     LoyaltyHistory {
         int id PK
         int loyalty_id FK
         int amount
-        enum transaction_type "earned|redeemed|adjusted|expired"
+        enum transaction_type
         string description
         int related_booking_id
         datetime created_at
+    }
+
+    ServiceType {
+        int id PK
+        string name UK
+        string code UK
+        decimal base_price
+        bool is_chargeable
+        bool is_active
     }
 
     ServiceRequest {
         int request_id PK
         int booking_id FK
         int user_id FK
-        enum service_type "room_service|housekeeping|maintenance|concierge|laundry|spa|dining|transport|pool|other"
+        string service_type
         text description
-        enum status "pending|in_progress|completed|cancelled"
-        enum priority "low|medium|high|urgent"
+        enum status
+        enum priority
         datetime requested_at
         datetime completed_at
         int assigned_staff_id FK
-        text notes
+        decimal price
+        bool is_billed
     }
 
     Notification {
         int notification_id PK
         int user_id FK
         text message
-        enum notification_type "booking|payment|service|promotion|system|loyalty|sms"
+        enum notification_type
         bool is_read
         datetime sent_at
         int related_id
-        string action_url
     }
 
     Promotion {
         int promotion_id PK
         int branch_id FK
         string title
-        text description
         decimal discount_percentage
-        decimal discount_amount
         string promo_code UK
         date start_date
         date end_date
         bool is_active
-        text terms_conditions
-        decimal min_booking_amount
-        decimal max_discount
         int usage_limit
         int usage_count
-        datetime created_at
     }
 
     PropertyConfig {
@@ -254,8 +258,6 @@ erDiagram
         string config_key
         text config_value
         text description
-        datetime created_at
-        datetime updated_at
     }
 
     AuditLog {
@@ -267,8 +269,76 @@ erDiagram
         json old_values
         json new_values
         datetime timestamp
-        string ip_address
-        text user_agent
+    }
+
+    Shift {
+        int shift_id PK
+        int user_id FK
+        int branch_id FK
+        datetime start_time
+        datetime end_time
+        string role
+        text notes
+    }
+
+    Facility {
+        int facility_id PK
+        int branch_id FK
+        string name
+        enum facility_type
+        text description
+        int capacity
+        decimal price_per_slot
+        int slot_duration_minutes
+        bool requires_booking
+        bool is_guest_only
+        bool is_active
+        json amenities
+        json operating_hours
+    }
+
+    FacilitySlot {
+        int slot_id PK
+        int facility_id FK
+        time start_time
+        time end_time
+        enum day_of_week
+        int max_capacity
+        decimal price_override
+        bool is_active
+    }
+
+    FacilityBooking {
+        int booking_id PK
+        int facility_id FK
+        int slot_id FK
+        int user_id FK
+        int room_booking_id FK
+        date booking_date
+        time start_time
+        time end_time
+        int number_of_guests
+        enum status
+        string event_type
+        string event_name
+        decimal total_amount
+        decimal deposit_amount
+        bool deposit_paid
+        enum payment_type
+        enum payment_status
+        text special_requests
+    }
+
+    FacilityAddOn {
+        int addon_id PK
+        int facility_id FK
+        int branch_id FK
+        string name
+        text description
+        decimal price
+        enum price_type
+        enum category
+        bool is_active
     }
 ```
 
@@ -290,6 +360,9 @@ After running `fix_passwords.py`:
 - **16 Rooms** - Various types
 - **5 Bookings** - Sample reservations
 - **4 Promotions** - Active discounts
+- **11 Facilities** - Pools, gyms, spas, event halls
+- **24 Facility Slots** - Pre-configured time slots
+- **5 Add-ons** - Catering, decoration, equipment
 
 ## Database Features
 
