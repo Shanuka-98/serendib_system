@@ -348,8 +348,7 @@ const RoomSearchPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="glass rounded-2xl overflow-hidden hover:shadow-xl transition-shadow cursor-pointer group"
-                onClick={() => navigate(`/rooms/${room.room_id}?check_in=${checkIn}&check_out=${checkOut}&guests=${guests}`)}
+                className="glass rounded-2xl overflow-hidden hover:shadow-xl transition-shadow group"
               >
                 {/* Room Image */}
                 <div className="relative h-48 bg-gradient-to-br from-primary-200 to-lavender-200 overflow-hidden">
@@ -429,12 +428,9 @@ const RoomSearchPage = () => {
                     </div>
                   )}
 
-                  {/* Book Button */}
+                  {/* View Details Button */}
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleBookNow(room)
-                    }}
+                    onClick={() => handleBookNow(room)}
                     className="btn btn-primary w-full group-hover:bg-primary-600 shadow-md group-hover:shadow-lg"
                   >
                     View Details
