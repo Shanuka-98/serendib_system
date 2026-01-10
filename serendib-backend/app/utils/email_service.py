@@ -67,3 +67,181 @@ def send_quote_email(to_email, booking_details, link):
     """
     
     return send_email(subject, [to_email], html=html_content)
+
+
+def send_booking_confirmation_email(to_email, booking_details):
+    """
+    Send booking confirmation email to guest after payment.
+    Non-blocking: errors are logged, not raised.
+    """
+    try:
+        subject = f"Booking Confirmed - {booking_details.get('booking_ref', 'Your Booking')}"
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #0284c7, #0369a1); padding: 20px; text-align: center;">
+                <h1 style="color: white; margin: 0;">Booking Confirmed!</h1>
+            </div>
+            
+            <div style="padding: 20px;">
+                <p>Dear {booking_details.get('guest_name', 'Guest')},</p>
+                
+                <p>Thank you for choosing <strong>Serendib Hotels</strong>. Your booking has been confirmed.</p>
+                
+                <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #0284c7; margin-top: 0;">Booking Details</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr><td style="padding: 8px 0;"><strong>Reference:</strong></td><td>{booking_details.get('booking_ref')}</td></tr>
+                        <tr><td style="padding: 8px 0;"><strong>Hotel:</strong></td><td>{booking_details.get('branch_name')}</td></tr>
+                        <tr><td style="padding: 8px 0;"><strong>Room:</strong></td><td>{booking_details.get('room_number')} ({booking_details.get('room_type', '')})</td></tr>
+                        <tr><td style="padding: 8px 0;"><strong>Check-in:</strong></td><td>{booking_details.get('check_in')}</td></tr>
+                        <tr><td style="padding: 8px 0;"><strong>Check-out:</strong></td><td>{booking_details.get('check_out')}</td></tr>
+                        <tr><td style="padding: 8px 0;"><strong>Guests:</strong></td><td>{booking_details.get('guests', 1)}</td></tr>
+                        <tr><td style="padding: 8px 0;"><strong>Total:</strong></td><td>Rs. {booking_details.get('total_amount', 0):,.2f}</td></tr>
+                    </table>
+                </div>
+                
+                <p style="color: #666;">We look forward to welcoming you!</p>
+                
+                <p style="color: #888; font-size: 12px;">If you have any questions, please contact us at support@serendibhotels.lk</p>
+            </div>
+        </div>
+        """
+        
+        return send_email(subject, [to_email], html=html_content)
+    except Exception as e:
+        logger.error(f"Failed to send booking confirmation email: {e}")
+        return False
+
+
+def send_checkin_email(to_email, booking_details):
+    """
+    Send check-in welcome email to guest.
+    Non-blocking: errors are logged, not raised.
+    """
+    try:
+        subject = f"Welcome to {booking_details.get('branch_name', 'Serendib Hotels')}!"
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #059669, #047857); padding: 20px; text-align: center;">
+                <h1 style="color: white; margin: 0;">Welcome!</h1>
+            </div>
+            
+            <div style="padding: 20px;">
+                <p>Dear {booking_details.get('guest_name', 'Guest')},</p>
+                
+                <p>You have been checked in to <strong>{booking_details.get('branch_name')}</strong>. We hope you have a wonderful stay!</p>
+                
+                <div style="background-color: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #059669; margin-top: 0;">Your Stay Details</h3>
+                    <p><strong>Room:</strong> {booking_details.get('room_number')}</p>
+                    <p><strong>Check-out:</strong> {booking_details.get('check_out')}</p>
+                    <p><strong>WiFi:</strong> SerendibGuest (Password: welcome123)</p>
+                </div>
+                
+                <p>Need anything? Our front desk is available 24/7 to assist you.</p>
+            </div>
+        </div>
+        """
+        
+        return send_email(subject, [to_email], html=html_content)
+    except Exception as e:
+        logger.error(f"Failed to send check-in email: {e}")
+        return False
+
+
+def send_checkout_email(to_email, booking_details):
+    """
+    Send check-out summary email to guest.
+    Non-blocking: errors are logged, not raised.
+    """
+    try:
+        subject = "Thank you for staying with Serendib Hotels"
+        
+        points_section = ""
+        if booking_details.get('points_earned'):
+            points_section = f"""
+            <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 0;"><strong>Loyalty Points Earned:</strong> {booking_details.get('points_earned')} points</p>
+                <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">Current Balance: {booking_details.get('total_points', 0)} points</p>
+            </div>
+            """
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #7c3aed, #6d28d9); padding: 20px; text-align: center;">
+                <h1 style="color: white; margin: 0;">Thank You!</h1>
+            </div>
+            
+            <div style="padding: 20px;">
+                <p>Dear {booking_details.get('guest_name', 'Guest')},</p>
+                
+                <p>Thank you for staying with us at <strong>{booking_details.get('branch_name')}</strong>. We hope you enjoyed your stay!</p>
+                
+                <div style="background-color: #f5f3ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #7c3aed; margin-top: 0;">Stay Summary</h3>
+                    <p><strong>Room:</strong> {booking_details.get('room_number')}</p>
+                    <p><strong>Stay:</strong> {booking_details.get('check_in')} to {booking_details.get('check_out')}</p>
+                    <p><strong>Total Paid:</strong> Rs. {booking_details.get('total_amount', 0):,.2f}</p>
+                </div>
+                
+                {points_section}
+                
+                <p>We look forward to welcoming you again soon!</p>
+            </div>
+        </div>
+        """
+        
+        return send_email(subject, [to_email], html=html_content)
+    except Exception as e:
+        logger.error(f"Failed to send check-out email: {e}")
+        return False
+
+
+def send_booking_cancelled_email(to_email, booking_details):
+    """
+    Send booking cancellation email to guest.
+    Non-blocking: errors are logged, not raised.
+    """
+    try:
+        subject = f"Booking Cancelled - {booking_details.get('booking_ref', 'Your Booking')}"
+        
+        refund_section = ""
+        if booking_details.get('refund_info'):
+            refund_section = f"""
+            <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 0;"><strong>Refund:</strong> {booking_details.get('refund_info')}</p>
+            </div>
+            """
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #dc2626, #b91c1c); padding: 20px; text-align: center;">
+                <h1 style="color: white; margin: 0;">Booking Cancelled</h1>
+            </div>
+            
+            <div style="padding: 20px;">
+                <p>Dear {booking_details.get('guest_name', 'Guest')},</p>
+                
+                <p>Your booking has been cancelled as requested.</p>
+                
+                <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #dc2626; margin-top: 0;">Cancelled Booking</h3>
+                    <p><strong>Reference:</strong> {booking_details.get('booking_ref')}</p>
+                    <p><strong>Hotel:</strong> {booking_details.get('branch_name')}</p>
+                    <p><strong>Room:</strong> {booking_details.get('room_number')}</p>
+                    <p><strong>Dates:</strong> {booking_details.get('check_in')} to {booking_details.get('check_out')}</p>
+                </div>
+                
+                {refund_section}
+                
+                <p>We hope to welcome you in the future.</p>
+            </div>
+        </div>
+        """
+        
+        return send_email(subject, [to_email], html=html_content)
+    except Exception as e:
+        logger.error(f"Failed to send cancellation email: {e}")
+        return False

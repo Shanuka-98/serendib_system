@@ -260,6 +260,28 @@ def confirm_payment():
         except Exception as sms_error:
             print(f"SMS notification failed: {sms_error}")
         
+        # Send booking confirmation email (non-blocking)
+        try:
+            from app.utils.email_service import send_booking_confirmation_email
+            booking_year = booking.booking_date.year if booking.booking_date else datetime.now().year
+            booking_ref = f"SER-{booking_year}-{str(booking.booking_id).zfill(6)}"
+            send_booking_confirmation_email(
+                to_email=booking.user.email,
+                booking_details={
+                    'booking_ref': booking_ref,
+                    'guest_name': booking.user.full_name,
+                    'branch_name': booking.branch.name if booking.branch else 'Serendib Hotels',
+                    'room_number': booking.room.room_number if booking.room else 'N/A',
+                    'room_type': booking.room.room_type if booking.room else '',
+                    'check_in': booking.check_in_date.strftime('%Y-%m-%d'),
+                    'check_out': booking.check_out_date.strftime('%Y-%m-%d'),
+                    'guests': booking.number_of_guests,
+                    'total_amount': float(booking.total_amount)
+                }
+            )
+        except Exception as email_error:
+            print(f"Email notification failed: {email_error}")
+        
         # Emit real-time notification to branch staff
         try:
             from app.services.notification_service import create_booking_notification

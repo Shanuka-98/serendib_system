@@ -472,6 +472,26 @@ def cancel_booking(booking_id):
     except Exception as sms_error:
         print(f"SMS cancellation failed: {sms_error}")
     
+    # Send cancellation email (non-blocking)
+    try:
+        from app.utils.email_service import send_booking_cancelled_email
+        booking_year = booking.booking_date.year if booking.booking_date else datetime.now().year
+        booking_ref = f"SER-{booking_year}-{str(booking.booking_id).zfill(6)}"
+        send_booking_cancelled_email(
+            to_email=booking.user.email,
+            booking_details={
+                'booking_ref': booking_ref,
+                'guest_name': booking.user.full_name,
+                'branch_name': booking.branch.name if booking.branch else 'Serendib Hotels',
+                'room_number': booking.room.room_number if booking.room else 'N/A',
+                'check_in': booking.check_in_date.strftime('%Y-%m-%d'),
+                'check_out': booking.check_out_date.strftime('%Y-%m-%d'),
+                'refund_info': refund_message.strip() if refund_message else None
+            }
+        )
+    except Exception as email_error:
+        print(f"Email cancellation failed: {email_error}")
+    
     # Log action
     AuditLog.log_action(
         user_id=current_user.user_id,
@@ -517,6 +537,21 @@ def check_in(booking_id):
         notification_type='booking',
         related_id=booking.booking_id
     )
+    
+    # Send check-in email (non-blocking)
+    try:
+        from app.utils.email_service import send_checkin_email
+        send_checkin_email(
+            to_email=booking.user.email,
+            booking_details={
+                'guest_name': booking.user.full_name,
+                'branch_name': booking.branch.name if booking.branch else 'Serendib Hotels',
+                'room_number': booking.room.room_number if booking.room else 'N/A',
+                'check_out': booking.check_out_date.strftime('%Y-%m-%d')
+            }
+        )
+    except Exception as email_error:
+        print(f"Email check-in failed: {email_error}")
     
     # Log action
     AuditLog.log_action(
@@ -577,6 +612,30 @@ def check_out(booking_id):
         notification_type='booking',
         related_id=booking.booking_id
     )
+    
+    # Send check-out email (non-blocking)
+    try:
+        from app.utils.email_service import send_checkout_email
+        points_earned = None
+        total_points = None
+        if booking.user.role == 'guest' and booking.user.loyalty_program:
+            points_earned = int(float(booking.total_amount) * 0.01)  # 1 point per 100 LKR
+            total_points = booking.user.loyalty_program.points
+        send_checkout_email(
+            to_email=booking.user.email,
+            booking_details={
+                'guest_name': booking.user.full_name,
+                'branch_name': booking.branch.name if booking.branch else 'Serendib Hotels',
+                'room_number': booking.room.room_number if booking.room else 'N/A',
+                'check_in': booking.check_in_date.strftime('%Y-%m-%d'),
+                'check_out': booking.check_out_date.strftime('%Y-%m-%d'),
+                'total_amount': float(booking.total_amount),
+                'points_earned': points_earned,
+                'total_points': total_points
+            }
+        )
+    except Exception as email_error:
+        print(f"Email check-out failed: {email_error}")
     
     # Log action
     AuditLog.log_action(
