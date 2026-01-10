@@ -161,17 +161,25 @@ const BillModal = ({ booking, onClose, onConfirmCheckout }) => {
           {/* Summary */}
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">Subtotal</span>
-              <span>LKR {bill?.summary.subtotal?.toLocaleString()}</span>
+              <span className="text-gray-600">Accommodation (incl. tax)</span>
+              <span>LKR {bill?.summary.accommodation?.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Service Charge (10%)</span>
-              <span>LKR {bill?.summary.service_charge?.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Government Tax ({(bill?.tax_rate * 100).toFixed(0)}%)</span>
-              <span>LKR {bill?.summary.tax?.toLocaleString()}</span>
-            </div>
+            {bill?.summary.additional_subtotal > 0 && (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Additional Services</span>
+                  <span>LKR {bill?.summary.additional_subtotal?.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Service Charge ({(bill?.service_charge_rate * 100).toFixed(0)}%)</span>
+                  <span>LKR {bill?.summary.additional_service_charge?.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Government Tax ({(bill?.tax_rate * 100).toFixed(0)}%)</span>
+                  <span>LKR {bill?.summary.additional_tax?.toLocaleString()}</span>
+                </div>
+              </>
+            )}
             <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-300">
               <span>Grand Total</span>
               <span>LKR {bill?.summary.grand_total?.toLocaleString()}</span>

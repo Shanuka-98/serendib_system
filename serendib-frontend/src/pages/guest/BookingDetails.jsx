@@ -311,11 +311,11 @@ const BookingDetailsPage = () => {
             >
               <h2 className="text-2xl font-display font-bold text-gray-800 mb-6 flex items-center justify-between">
                 <span>Charges & Services</span>
-                <span className={`text-sm px-3 py-1 rounded-full ${
-                  booking.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                }`}>
-                  {booking.payment_status === 'paid' ? 'Fully Paid' : 'Balance Due'}
-                </span>
+                {bill && bill.summary.balance_due > 0 && (
+                  <span className="text-sm px-3 py-1 rounded-full bg-amber-100 text-amber-700">
+                    Balance Due
+                  </span>
+                )}
               </h2>
 
               <BillSummary bill={bill} />
@@ -331,26 +331,72 @@ const BookingDetailsPage = () => {
               animate={{ opacity: 1, x: 0 }}
               className="glass rounded-2xl p-6"
             >
-              <h2 className="text-xl font-bold text-gray-800 mb-4">
-                Total Payment
+              <h2 className="text-xl font-bold text-gray-800 mb-5">
+                Payment Summary
               </h2>
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-gray-600">
-                  <span>Room Charge</span>
-                  <span>{formatPrice(booking.total_amount)}</span>
-                </div>
-                {bill && (
-                  <div className="flex justify-between text-sm text-gray-500">
-                    <span>Payment Status</span>
-                    <span className={`font-medium ${bill.summary.balance_due <= 0 ? 'text-green-600' : 'text-amber-600'}`}>
-                      {bill.summary.balance_due <= 0 ? 'Paid' : 'Due'}
-                    </span>
+              
+              <div className="space-y-3">
+                {/* Room Charges (Prepaid) */}
+                <div className="p-4 bg-green-50 rounded-xl border border-green-100">
+                  <div className="flex justify-between items-start mb-1">
+                    <div>
+                      <span className="block text-gray-800 font-semibold mb-1">Room</span>
+                      <span className="inline-block text-[10px] text-green-700 bg-green-200 px-2 py-0.5 rounded-full font-medium">Prepaid</span>
+                    </div>
+                    <span className="font-bold text-gray-900 text-right">{formatPrice(booking.total_amount)}</span>
                   </div>
+                  <div className="flex items-center text-xs text-green-600 mt-2 pt-2 border-t border-green-100 border-dashed">
+                    <CheckCircle className="h-3 w-3 mr-1.5" />
+                    Paid via card
+                  </div>
+                </div>
+
+                {/* Services Due */}
+                {bill && (
+                  <div className={`p-4 rounded-xl border ${
+                    (bill.summary.additional_subtotal || 0) > 0 
+                      ? 'bg-amber-50 border-amber-100' 
+                      : 'bg-gray-50 border-gray-200'
+                  }`}>
+                    <div className="flex justify-between items-start mb-1">
+                      <div>
+                        <span className="block text-gray-800 font-semibold mb-1">Services</span>
+                        {(bill.summary.additional_subtotal || 0) > 0 ? (
+                          <span className="inline-block text-[10px] text-amber-700 bg-amber-200 px-2 py-0.5 rounded-full font-medium">At Checkout</span>
+                        ) : (
+                          <span className="text-xs text-gray-500">No additional charges</span>
+                        )}
+                      </div>
+                      <span className="font-bold text-gray-900 text-right">
+                        {formatPrice((bill.summary.additional_subtotal || 0) + (bill.summary.additional_service_charge || 0) + (bill.summary.additional_tax || 0))}
+                      </span>
+                    </div>
+                    {(bill.summary.additional_subtotal || 0) > 0 && (
+                       <p className="text-xs text-amber-600 mt-2 pt-2 border-t border-amber-200 border-dashed">
+                         Pay at checkout
+                       </p>
+                    )}
+                  </div>
+                )} 
+
+                {/* Total Balance - Only show if there is a due amount */}
+                {bill && bill.summary.balance_due > 0 && (
+                  <>
+                    <div className="border-t border-dashed border-gray-300 my-1"></div>
+                    <div className="p-4 rounded-xl border-2 bg-amber-50 border-amber-300">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-gray-800">Balance Due</span>
+                        <span className="text-xl font-bold text-amber-600">
+                          {formatPrice(bill.summary.balance_due)}
+                        </span>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
 
               {/* Action Buttons */}
-              <div className="space-y-3">
+              <div className="space-y-4 mt-6">
                 <button
                   onClick={() => window.print()}
                   className="w-full btn btn-secondary flex items-center justify-center gap-2 group hover:shadow-md transition-all"
@@ -458,17 +504,20 @@ const BillSummary = ({ bill }) => {
   
   // Calculate if fully paid based on balance
   const isFullyPaid = bill.summary.balance_due <= 0
+  
+  // Check if there are any additional charges
+  const hasAdditionalCharges = (bill.summary.additional_subtotal || 0) > 0
 
   return (
     <div className="space-y-4">
-      {/* Room Charges */}
+      {/* Room Charges - shows actual amount charged (with discounts) */}
       <div className="flex justify-between items-center pb-3 border-b border-gray-100">
         <div>
           <p className="font-medium text-gray-800">Accommodation</p>
           <p className="text-xs text-gray-500">{bill.stay.nights} nights × {new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.room_charges.per_night)}</p>
         </div>
         <div className="text-right">
-          <p className="font-medium">{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.room_charges.total)}</p>
+          <p className="font-medium">{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.accommodation)}</p>
           {bill.room_charges.paid && <span className="text-[10px] text-green-600 bg-green-50 px-2 py-0.5 rounded-full ring-1 ring-green-100">Prepaid</span>}
         </div>
       </div>
@@ -512,17 +561,25 @@ const BillSummary = ({ bill }) => {
       {/* Totals */}
       <div className="pt-4 border-t border-gray-200 space-y-2 text-sm bg-gray-50 p-4 rounded-xl mt-4 border border-gray-100">
         <div className="flex justify-between text-gray-600">
-          <span>Subtotal</span>
-          <span>{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.subtotal)}</span>
+          <span>Accommodation (incl. tax)</span>
+          <span>{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.accommodation)}</span>
         </div>
-        <div className="flex justify-between text-gray-600">
-          <span>Service Charge ({(bill.service_charge_rate * 100).toFixed(0)}%)</span>
-          <span>{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.service_charge)}</span>
-        </div>
-        <div className="flex justify-between text-gray-600">
-          <span>Taxes ({(bill.tax_rate * 100).toFixed(0)}%)</span>
-          <span>{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.tax)}</span>
-        </div>
+        {hasAdditionalCharges && (
+          <>
+            <div className="flex justify-between text-gray-600">
+              <span>Additional Services</span>
+              <span>{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.additional_subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>Service Charge ({(bill.service_charge_rate * 100).toFixed(0)}%)</span>
+              <span>{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.additional_service_charge)}</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>Taxes ({(bill.tax_rate * 100).toFixed(0)}%)</span>
+              <span>{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.additional_tax)}</span>
+            </div>
+          </>
+        )}
         <div className="flex justify-between font-bold text-gray-900 border-t border-gray-200 pt-3 mt-2 text-base">
           <span>Total</span>
           <span>{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.grand_total)}</span>
@@ -533,18 +590,18 @@ const BillSummary = ({ bill }) => {
             <span>-{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.prepaid)}</span>
           </div>
         )}
-        <div className={`flex justify-between font-bold text-lg pt-3 border-t border-dashed border-gray-300 mt-2 ${
-          isFullyPaid ? 'text-green-600' : 'text-amber-600'
-        }`}>
-          <span>{isFullyPaid ? 'Balance Due' : 'Amount Due'}</span>
-          <span>
-            {new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.balance_due)}
-          </span>
-        </div>
+        {!isFullyPaid && (
+          <div className="flex justify-between font-bold text-lg pt-3 border-t border-dashed border-gray-300 mt-2 text-amber-600">
+            <span>Amount Due</span>
+            <span>
+              {new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(bill.summary.balance_due)}
+            </span>
+          </div>
+        )}
         {isFullyPaid && (
-          <div className="text-center mt-2">
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600 uppercase tracking-wider bg-green-50 px-3 py-1 rounded-full border border-green-100">
-              <CheckCircle className="w-3 h-3" />
+          <div className="text-center pt-3 border-t border-dashed border-gray-300 mt-2">
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-green-600 uppercase tracking-wider bg-green-50 px-4 py-2 rounded-full border border-green-200">
+              <CheckCircle className="w-4 h-4" />
               Paid in Full
             </span>
           </div>

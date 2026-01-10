@@ -651,9 +651,13 @@ def get_booking_bill(booking_id):
     if nights < 1:
         nights = 1
     
-    # Room charges
+    # Room charges - use the actual BOOKING total (includes any discounts applied)
+    # This is what the guest actually paid/owes for accommodation
     room_rate = float(booking.room.price_per_night) if booking.room else 0
-    room_total = room_rate * nights
+    room_total_display = room_rate * nights  # For display purposes only
+    
+    # The actual amount for accommodation (with discounts) is stored in booking
+    accommodation_amount = float(booking.total_amount)
     
     # Get billed services
     services = ServiceRequest.query.filter_by(
@@ -710,16 +714,20 @@ def get_booking_bill(booking_id):
         except (ValueError, TypeError):
             service_charge_rate = 0.10
     
-    # Calculations (including facilities)
-    subtotal = room_total + services_total + facilities_total
-    service_charge = subtotal * service_charge_rate
-    taxable_amount = subtotal + service_charge
-    tax = taxable_amount * tax_rate
-    grand_total = subtotal + service_charge + tax
+    # Calculate additional charges (services + facilities) with tax
+    # Room accommodation already includes tax/service charge in booking.total_amount
+    additional_subtotal = services_total + facilities_total
+    additional_service_charge = additional_subtotal * service_charge_rate
+    additional_taxable = additional_subtotal + additional_service_charge
+    additional_tax = additional_taxable * tax_rate
+    additional_total = additional_subtotal + additional_service_charge + additional_tax
     
-    # what's been paid
+    # Grand total = accommodation (prepaid) + additional charges
+    grand_total = accommodation_amount + additional_total
+    
+    # What's been paid - get actual payment amount
     payment = booking.payments.filter_by(payment_status='completed').first()
-    prepaid = float(booking.total_amount) if payment else 0
+    prepaid = float(payment.amount) if payment else 0
     
     balance_due = max(0, grand_total - prepaid)
     
@@ -744,7 +752,8 @@ def get_booking_bill(booking_id):
         'room_charges': {
             'per_night': room_rate,
             'nights': nights,
-            'total': room_total,
+            'total': room_total_display,  # Display price (before discounts)
+            'amount_charged': accommodation_amount,  # Actual amount after discounts
             'paid': bool(payment)
         },
         'services': service_items,
@@ -754,12 +763,12 @@ def get_booking_bill(booking_id):
         'service_charge_rate': service_charge_rate,
         'tax_rate': tax_rate,
         'summary': {
-            'room_total': room_total,
+            'accommodation': accommodation_amount,  # What was actually charged for room
             'services_subtotal': services_total,
             'facilities_subtotal': facilities_total,
-            'subtotal': subtotal,
-            'service_charge': round(service_charge, 2),
-            'tax': round(tax, 2),
+            'additional_subtotal': additional_subtotal,
+            'additional_service_charge': round(additional_service_charge, 2),
+            'additional_tax': round(additional_tax, 2),
             'grand_total': round(grand_total, 2),
             'prepaid': prepaid,
             'balance_due': round(balance_due, 2)
