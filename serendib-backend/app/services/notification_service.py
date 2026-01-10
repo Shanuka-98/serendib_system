@@ -96,33 +96,25 @@ def create_booking_notification(booking, guest_user):
 def create_service_request_notification(service_request, guest_user, booking):
     """
     Create notifications for staff in the booking's branch when a service request is raised.
-    Routes to staff with matching role_type for the service.
+    Only managers and front_desk receive new request notifications.
+    Other staff roles (housekeeping, spa, etc.) only get notified when explicitly assigned.
     
     Args:
         service_request: ServiceRequest object
         guest_user: User object of the guest
         booking: Related Booking object
     """
-    from app.models.service_request import ServiceRequest as SR
-    
     branch_id = booking.branch_id if booking else None
     branch_name = booking.branch.name if booking and booking.branch else 'Unknown'
     
-    # Get the role_type that should handle this service type
-    target_role_type = SR.get_role_type_for_service(service_request.service_type)
-    
-    # Get staff users for this branch with matching role_type
-    # Managers and front_desk also receive all service notifications
+    # Only notify managers and front_desk staff
+    # Other staff roles will be notified when assigned
     if branch_id:
         staff_users = User.query.filter(
             db.and_(
                 User.role == 'staff',
                 User.branch_id == branch_id,
-                db.or_(
-                    User.role_type == target_role_type,
-                    User.role_type == 'manager',
-                    User.role_type == 'front_desk'
-                )
+                User.role_type.in_(['manager', 'front_desk'])
             )
         ).all()
     else:
@@ -130,10 +122,7 @@ def create_service_request_notification(service_request, guest_user, booking):
         staff_users = User.query.filter(
             db.and_(
                 User.role == 'staff',
-                db.or_(
-                    User.role_type == 'manager',
-                    User.role_type == 'front_desk'
-                )
+                User.role_type.in_(['manager', 'front_desk'])
             )
         ).all()
     
