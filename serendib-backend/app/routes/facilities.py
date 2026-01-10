@@ -489,6 +489,44 @@ def create_facility_booking():
         
         number_of_guests = data.get('number_of_guests', 1)
         
+        
+        # Check for overlaps for Event Halls / Meeting Rooms
+        if facility.facility_type in ['event_hall', 'meeting_room']:
+            # Get existing bookings that would conflict (Confirmed or Pending payment)
+            # We allow multiple Inquiries for the same date until one is confirmed
+            existing_bookings = FacilityBooking.query.filter(
+                FacilityBooking.facility_id == facility.facility_id,
+                FacilityBooking.booking_date == booking_date,
+                FacilityBooking.status.in_(['confirmed', 'pending', 'in_progress', 'completed'])
+            ).all()
+
+            new_start = None
+            new_end = None
+            if data.get('start_time'):
+                try:
+                    new_start = datetime.strptime(data['start_time'], '%H:%M').time()
+                except ValueError:
+                    return error_response('Invalid start_time format (HH:MM)', 400)
+            if data.get('end_time'):
+                try:
+                    new_end = datetime.strptime(data['end_time'], '%H:%M').time()
+                except ValueError:
+                    return error_response('Invalid end_time format (HH:MM)', 400)
+            
+            for b in existing_bookings:
+                # 1. Existing is Full Day
+                if not b.start_time or not b.end_time:
+                    return error_response('Facility is already fully booked for this date', 400)
+                
+                # 2. New is Full Day, but existing has time slot
+                if not new_start or not new_end:
+                    return error_response(f'Cannot book full day, there is already a booking from {b.start_time.strftime("%H:%M")} to {b.end_time.strftime("%H:%M")}', 400)
+                
+                # 3. Time Slot Overlap
+                # (StartA < EndB) and (EndA > StartB)
+                if new_start < b.end_time and new_end > b.start_time:
+                    return error_response(f'Requested time overlaps with an existing booking ({b.start_time.strftime("%H:%M")} - {b.end_time.strftime("%H:%M")})', 400)
+
         # Different handling for slot-based vs event bookings
         if facility.facility_type in ['event_hall', 'meeting_room']:
             # Event hall inquiry
