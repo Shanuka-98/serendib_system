@@ -62,10 +62,6 @@
 
 **1. Guest Portal (100%)**
 - **Home** (`/`): Landing page with brand showcase and branch highlights.
-- **About** (`/about`): Company information and values.
-- **Contact** (`/contact`): Contact details and branch locations.
-- **Careers** (`/careers`): Job listings and application info.
-- **Privacy** (`/privacy`): Privacy policy page.
 - **Room Search** (`/rooms`): Advanced filtering, real-time availability.
 - **Room Details** (`/rooms/:id`): Room info, amenities, gallery, booking button.
 - **Booking** (`/booking`): Date selection, Stripe payment, promo codes, loyalty redemption.
